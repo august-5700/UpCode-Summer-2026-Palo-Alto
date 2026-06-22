@@ -6,23 +6,32 @@ import calendar
 from datetime import date
 import json
 
+col_options = [
+    "NAME",
+    "DP04_0089E",
+    "DP04_0134E",
+    "DP04_0001E",
+    "DP04_0003PE"
+]
 
-def get_month_data(m, y):
-    start_date = date(y, m, 1)
-    _, last_day = calendar.monthrange(start_date.year, start_date.month)
-    end_of_month_date = date(start_date.year, start_date.month, last_day)
-    url = f"https://api.census.gov/data/2024/acs/acs5/profile?get=NAME,DP04_0089E,DP04_0134E,DP04_0001E,DP04_0003PE&for=county:*&key={os.getenv("CENSUS_API_KEY")}" # api request url here with dates and stuff
+def get_data(cols_to_get, county = '*', state = '*'):
+    # verify that all cols passed are valid 
+    for col in cols_to_get:
+        if col not in col_options:
+            break
+        url = f"https://api.census.gov/data/2024/acs/acs5/profile?get={cols_to_get}&for=county:{county}&in:{state}&key={os.getenv("CENSUS_API_KEY")}" # api request url here with dates and stuff
     response = requests.get(url)
-    return response.json()["features"]
+    return response.json()
 
 
 all_entries = []
-for month in range(1, 13):
+for state in range(1, 51):
+
     rows = get_month_data(month, 2026)
     all_entries += rows
 
 
-def createTSV(labels): # string array of labels
+def createTSV(labels): # string array of labels (county names)
     f = open('tsvfile.tsv','w')
 
     toWrite = '\t'.join(labels) + '\n'
