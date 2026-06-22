@@ -1,4 +1,5 @@
 import urllib.request, json
+import os
 import pandas as pd
 import requests
 import calendar
@@ -10,7 +11,7 @@ def get_month_data(m, y):
     start_date = date(y, m, 1)
     _, last_day = calendar.monthrange(start_date.year, start_date.month)
     end_of_month_date = date(start_date.year, start_date.month, last_day)
-    url = "" # api request url here with dates and stuff
+    url = f"https://api.census.gov/data/2024/acs/acs5/profile?get=NAME,DP04_0089E,DP04_0134E,DP04_0001E,DP04_0003PE&for=county:*&key={os.getenv("CENSUS_API_KEY")}" # api request url here with dates and stuff
     response = requests.get(url)
     return response.json()["features"]
 
