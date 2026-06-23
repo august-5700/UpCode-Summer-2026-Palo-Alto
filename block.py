@@ -16,7 +16,7 @@ url = f"https://api.census.gov/data/2024/acs/acs5/profile?get=NAME,DP04_0089E,DP
 response = requests.get(url)
 res = response.json()
 
-lim = 10
+upper_lim = int(input('enter upper lim'))
 
 header = [
     'State FIP',
@@ -94,7 +94,7 @@ with open(f"blocks.tsv", "w", newline="", encoding="utf-8") as file:
 
 
     # write out the block groups without headers for each other (county, state) pair until the limit
-    for i in range(2, lim):
+    for i in range(2, upper_lim):
         print(f"Fetching block groups from county {i} of {lim}")
         row = res[i]
         stateFIP, countyFIP = row[5], row[6]
