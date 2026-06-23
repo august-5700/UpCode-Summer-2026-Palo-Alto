@@ -2,10 +2,7 @@
 
 import urllib.request, json
 import os
-# import pandas as pd
 import requests
-import calendar
-from datetime import date
 import json
 import csv
 
