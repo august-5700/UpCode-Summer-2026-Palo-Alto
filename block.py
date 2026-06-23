@@ -119,48 +119,19 @@ with open(f"blocks.tsv", "w", newline="", encoding="utf-8") as file:
     writer = csv.writer(file, delimiter="\t")
 
     # write out the block groups for the first (couunty, state) pair
-    row = res[1]
-    stateFIP, countyFIP = row[5], row[6]
-    url = f"https://api.census.gov/data/2024/acs/acs5?get={','.join(cols_to_get)}&for=block%20group:*&in=state:{stateFIP}%20county:{countyFIP}%20tract:*&key={os.getenv('CENSUS_API_KEY')}"
-    response = requests.get(url)
     print('Fetched '+str(len(res))+' state county pairs')
 
     writer.writerow(header)
 
 
-    for r in response.json():
-        # edit the current row to display cols in the desired order
-        edited_row = r[-4:]+r[:-4]
-        # check for numerical jam values and replace with appropriate error messages
-        for c in range(len(edited_row)):
-            match edited_row[c]:
-                case '-666666666':
-                    edited_row[c] = None #SMALL SAMPLE SIZE
-                case '-888888888':
-                    edited_row[c] = None #NA
-                case '-999999999':
-                    edited_row[c] = None #NA FOR REGION
-                case '-222222222':
-                    edited_row[c] = None #MOE SMALL SAMPLE SIZE
-                case '-333333333':
-                    edited_row[c] = None #MEDIAN IN LOWER/UPPER INTERVAL
-                case '-555555555':
-                    edited_row[c] = 0
-            if c >= 4:
-                try:
-                    edited_row[c] = int(edited_row[c])
-                except:
-                    pass
-
-
     # write out the block groups without headers for each other (county, state) pair until the limit
-    for i in range(2, upper_lim):
-        print(f"Fetching block groups from county {i} of {lim}")
+    for i in range(1, upper_lim):
+        print(f"Fetching block groups from county {i} of {upper_lim}")
         row = res[i]
         stateFIP, countyFIP = row[5], row[6]
         url = f"https://api.census.gov/data/2024/acs/acs5?get={','.join(cols_to_get)}&for=block%20group:*&in=state:{stateFIP}%20county:{countyFIP}%20tract:*&key={os.getenv('CENSUS_API_KEY')}"
         response = requests.get(url)
-        for r in response.json()[1:lim]:
+        for r in response.json()[1:upper_lim]:
             edited_row = r[-4:]+r[:-4]
 
             coords = getCoords( # SELECT COORDS FOR LATER!!
