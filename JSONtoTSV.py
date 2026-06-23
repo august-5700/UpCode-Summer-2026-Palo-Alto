@@ -20,7 +20,7 @@ for row in res:
     all_entries.append(row[:4])
 
 
-with open(f"data1.tsv", "w", newline="", encoding="utf-8") as file:
+with open(f"data.tsv", "w", newline="", encoding="utf-8") as file:
 
     writer = csv.writer(file, delimiter="\t")
     
