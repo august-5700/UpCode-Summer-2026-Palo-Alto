@@ -123,6 +123,7 @@ with open(f"blocks.tsv", "w", newline="", encoding="utf-8") as file:
     stateFIP, countyFIP = row[5], row[6]
     url = f"https://api.census.gov/data/2024/acs/acs5?get={','.join(cols_to_get)}&for=block%20group:*&in=state:{stateFIP}%20county:{countyFIP}%20tract:*&key={os.getenv('CENSUS_API_KEY')}"
     response = requests.get(url)
+    print('Fetched '+str(len(res))+' state county pairs')
 
     writer.writerow(header)
 
@@ -154,7 +155,7 @@ with open(f"blocks.tsv", "w", newline="", encoding="utf-8") as file:
 
     # write out the block groups without headers for each other (county, state) pair until the limit
     for i in range(2, lim):
-        print(f"{i}/{lim}")
+        print(f"Fetching block groups from county {i} of {lim}")
         row = res[i]
         stateFIP, countyFIP = row[5], row[6]
         url = f"https://api.census.gov/data/2024/acs/acs5?get={','.join(cols_to_get)}&for=block%20group:*&in=state:{stateFIP}%20county:{countyFIP}%20tract:*&key={os.getenv('CENSUS_API_KEY')}"
