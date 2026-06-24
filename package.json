@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "nominatim-client": "^3.2.1"
+  }
+}
