@@ -1,5 +1,31 @@
 {
   "dependencies": {
-    "nominatim-client": "^3.2.1"
-  }
+    "dom": "^0.0.3",
+    "next": "^9.3.3",
+    "nominatim-client": "^3.2.1",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  },
+  "name": "upcode-summer-2026-palo-alto",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/august-5700/UpCode-Summer-2026-Palo-Alto.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/august-5700/UpCode-Summer-2026-Palo-Alto/issues"
+  },
+  "homepage": "https://github.com/august-5700/UpCode-Summer-2026-Palo-Alto#readme"
 }

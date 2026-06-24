@@ -115,6 +115,13 @@ def getCoords(stateFIP, countyFIP, tractCode=None,blockGroup=None):
         "url": url
     }
 
+def getCoordsFromTSV(stateFIP, countyFIP, tractCode, blockGroup):
+    with open(f'block_coords.tsv', 'r', newline='', encoding='utf-8') as file:
+        reader = csv.reader(file, delimiter='\t')
+        for row in reader:
+            if row[1] == stateFIP and row[2] == countyFIP and row[3] == tractCode and row[4] == blockGroup:
+                return [row[5], row[6]]
+
 
 # begin writing in blocks.tsv
 with open(f"blocks.tsv", "w", newline="", encoding="utf-8") as file:
@@ -130,20 +137,14 @@ with open(f"blocks.tsv", "w", newline="", encoding="utf-8") as file:
     # write out the block groups without headers for each other (county, state) pair until the limit
     for i in range(1, upper_lim):
         loop_start_time = time.perf_counter()
-        print(f"Fetching block groups from county {i} of {upper_lim}")
         row = res[i]
+        print(f"Fetching block groups from county {i} of {upper_lim}: {row[0]}")
         stateFIP, countyFIP = row[5], row[6]
         url = f"https://api.census.gov/data/2024/acs/acs5?get={','.join(cols_to_get)}&for=block%20group:*&in=state:{stateFIP}%20county:{countyFIP}%20tract:*&key={os.getenv('CENSUS_API_KEY')}"
         response = requests.get(url)
         for r in response.json()[1:upper_lim]:
             edited_row = r[-4:]+r[:-4]
-
-            coords = getCoords( # SELECT COORDS FOR LATER!!
-                edited_row[0], # state FIP
-                edited_row[1], # county FIP
-                edited_row[2], # tract code
-                edited_row[3] # block group
-            )
+            tractCode, blockGroup = edited_row[2], edited_row[3]
             for c in range(len(edited_row)):
                 match edited_row[c]:
                     case '-666666666':
@@ -164,12 +165,15 @@ with open(f"blocks.tsv", "w", newline="", encoding="utf-8") as file:
                     except:
                         pass
             
-            if coords: # ADD LAT LNG
-                edited_row.append(coords["lat"])
-                edited_row.append(coords["lng"])
-            else: # IF NO COORDS AVAILABLE
-                edited_row.append(None)
-                edited_row.append(None)
+            # if coords: # ADD LAT LNG
+            #     edited_row.append(coords["lat"])
+            #     edited_row.append(coords["lng"])
+            # else: # IF NO COORDS AVAILABLE
+            #     edited_row.append(None)
+            
+            #     edited_row.append(None)
+            edited_row.append(getCoordsFromTSV(stateFIP, countyFIP, tractCode, blockGroup)[0])
+            edited_row.append(getCoordsFromTSV(stateFIP, countyFIP, tractCode, blockGroup)[1])
 
              
             writer.writerow(edited_row)
