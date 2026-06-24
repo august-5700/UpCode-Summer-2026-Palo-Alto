@@ -4,6 +4,7 @@ import requests
 import json
 import csv
 import random
+import time
 
 from dotenv import load_dotenv
 
@@ -11,12 +12,14 @@ from urllib.parse import urlencode
 
 load_dotenv()
 
+start_time = time.perf_counter()
+
 # fetch counties
 url = f"https://api.census.gov/data/2024/acs/acs5/profile?get=NAME,DP04_0089E,DP04_0134E,DP04_0001E,DP04_0003PE&for=county:*&key={os.getenv('CENSUS_API_KEY')}" # api request url here with dates and stuff
 response = requests.get(url)
 res = response.json()
 
-upper_lim = int(input('enter upper lim'))
+upper_lim = int(input('enter upper lim: '))
 
 header = [
     'State FIP',
@@ -126,6 +129,7 @@ with open(f"blocks.tsv", "w", newline="", encoding="utf-8") as file:
 
     # write out the block groups without headers for each other (county, state) pair until the limit
     for i in range(1, upper_lim):
+        loop_start_time = time.perf_counter()
         print(f"Fetching block groups from county {i} of {upper_lim}")
         row = res[i]
         stateFIP, countyFIP = row[5], row[6]
@@ -169,5 +173,7 @@ with open(f"blocks.tsv", "w", newline="", encoding="utf-8") as file:
 
              
             writer.writerow(edited_row)
+        loop_end_time = time.perf_counter()
+        print(f'Fetched block groups from county {i}. This county took {(loop_end_time - loop_start_time):.6f} seconds to fetch. It has been {(loop_end_time - start_time):.6f} seconds since the program began.')
 
 
