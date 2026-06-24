@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 header = [
+    'ID',
     'State FIP',
     'County FIP ',
     'Median Home Value',
@@ -66,4 +67,5 @@ with open(f"counties.tsv", "w", newline="", encoding="utf-8") as file:
         edited_row = r[-2:]+r[:-2]
         edited_row.append(getCoordsFromTSV(stateFIP, countyFIP)[0])
         edited_row.append(getCoordsFromTSV(stateFIP, countyFIP)[1])
+        edited_row.insert(0, res.index(r) - 1)
         writer.writerow(edited_row)
