@@ -116,7 +116,7 @@ def getCoords(stateFIP, countyFIP, tractCode=None,blockGroup=None):
     }
 
 def getCoordsFromTSV(stateFIP, countyFIP, tractCode, blockGroup):
-    with open(f'coords.tsv', 'r', newline='', encoding='utf-8') as file:
+    with open(f'block_coords.tsv', 'r', newline='', encoding='utf-8') as file:
         reader = csv.reader(file, delimiter='\t')
         for row in reader:
             if row[1] == stateFIP and row[2] == countyFIP and row[3] == tractCode and row[4] == blockGroup:
