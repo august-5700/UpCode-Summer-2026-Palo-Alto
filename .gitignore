@@ -1,3 +1,4 @@
 .env
 .venv/*
 *.tsv
+.DS_Store
