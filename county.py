@@ -11,20 +11,21 @@ load_dotenv()
 
 header = [
     'ID',
-    'State FIP',
-    'County FIP ',
-    'Median Home Value',
-    'Median Home Value Margin of Error',
-    'Median Gross Rent',
-    'Median Gross Rent Margin of Error',
-    'Total Housing Units',
-    'Total Margin of Error',
-    'Total Occupied Housing Units',
-    'Occupied Margin of Error (percent)',
-    'Total Vacant Housing Units',
-    'Vacant Margin of Error (percent)',
-    'Latitude',
-    'Longitude'
+    'NAME',
+    'STATE_FIP',
+    'COUNTY_FIP',
+    'MEDIAN_HOME_VALUE',
+    'MEDIAN_HOME_VALUE_MARGIN_OF_ERROR',
+    'MEDIAN_GROSS_RENT',
+    'MEDIAN_GROSS_RENT_MARGIN_OF_ERROR',
+    'TOTAL_HOUSING_UNITS',
+    'TOTAL_MARGIN_OF_ERROR',
+    'TOTAL_OCCUPIED_HOUSING_UNITS',
+    'OCCUPIED_MARGIN_OF_ERROR_PERCENT',
+    'TOTAL_VACANT_HOUSING_UNITS',
+    'VACANT_MARGIN_OF_ERROR_PERCENT',
+    'LATITUDE',
+    'LONGITUDE'
 ]
 
 cols_to_get = [
@@ -37,7 +38,7 @@ cols_to_get = [
     'DP04_0002E',
     'DP04_0002M',
     'DP04_0003E',
-    'DP04_0003M'
+    'DP04_0003M',
 ]
 
 def get_county_level_data(cols_to_get = None):
@@ -50,12 +51,12 @@ def get_county_level_data(cols_to_get = None):
 
 res = get_county_level_data(cols_to_get)
 
-def getCoordsFromTSV(stateFIP, countyFIP):
+def getCoordsFromTSV(stateFIP, countyFIP): # also gets county name
     with open(f'county_coords.tsv', 'r', newline='', encoding='utf-8') as file:
         reader = csv.reader(file, delimiter='\t')
         for row in reader:
             if row[1] == stateFIP and row[2] == countyFIP:
-                return [row[7], row[8]]
+                return [row[7], row[8], row[3]]
 
 with open(f"counties.tsv", "w", newline="", encoding="utf-8") as file:
 
@@ -64,8 +65,9 @@ with open(f"counties.tsv", "w", newline="", encoding="utf-8") as file:
     for r in res[1::]:
         print(r)
         stateFIP, countyFIP = r[10], r[11]
-        edited_row = r[-2:]+r[:-2]
+        edited_row = r[-3:]+r[:-3]
         edited_row.append(getCoordsFromTSV(stateFIP, countyFIP)[0])
         edited_row.append(getCoordsFromTSV(stateFIP, countyFIP)[1])
         edited_row.insert(0, res.index(r) - 1)
+        edited_row.insert(1, getCoordsFromTSV(stateFIP, countyFIP)[2])
         writer.writerow(edited_row)
