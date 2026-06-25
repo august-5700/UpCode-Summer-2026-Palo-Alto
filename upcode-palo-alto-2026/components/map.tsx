@@ -11,8 +11,10 @@ export default function Map() {
     const containerRef = useRef<HTMLDivElement | null>(null);
 
 
-    function triangleGrid(startingPoint:HeatLatLngTuple, endingPoint:HeatLatLngTuple, center:LatLngTuple ,length:number){
-        var grid = []
+    function triangleGrid(startingPoint:LatLngTuple, endingPoint:LatLngTuple, center:LatLngTuple ,length:number, intensity:number){
+        var grid:HeatLatLngTuple[] = []
+
+
         const v1x = startingPoint[0] - endingPoint[0] // x distance between start and end
         const v1y:number = startingPoint[1] - endingPoint[1] // y distance from start to end 
 
@@ -40,22 +42,33 @@ export default function Map() {
                 x += i * v2x
                 y += i * v2y
                 if (x > xLeftLimit && x < xRightLimit && y > yTopLimit && y < yBottomLimit){
-                    grid.push([x,y, 100.0])
+                    grid.push([x,y, intensity] as HeatLatLngTuple)
                 }
             }
     
         }
+
+        // const tmp:LatLngTuple[] =  [
+        //     [40.1, -110],
+        //     [40, -110],
+        //     [40, -100],
+        // ]
+
+        // tmp.forEach((pt:LatLngTuple)=>{
+        //     grid.push([pt[0], pt[1], 1000.0])
+        // })
+
         return grid as HeatLatLngTuple[] 
     }
   
 
 
 
-  const startingZoom = 8;
+  const startingZoom = 5;
   const maxZoom = 15;
 
 
-  const targetRadius = 3000;
+  const targetRadius = 30;
   
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -69,13 +82,15 @@ export default function Map() {
       }
     );
 
-    const heatData:HeatLatLngTuple[] = [// triangleGrid(
-        [50.1, -110, 1000.0],
-        [50, -110, 1000.0]]
-        // [40, -100],
-        // 5
-    // )
+    const heatData:HeatLatLngTuple[] = triangleGrid(
+        [50.1, -110],
+        [50, -110],
+        [40, -100],
+        50,
+        5
+    )
     console.log(heatData.length)
+
     const startingCenter:LatLngTuple = heatData[0]
 
     const map = L.map(containerRef.current, {
@@ -104,7 +119,8 @@ export default function Map() {
         return meters / metersPerPixel;
     }
 
-    const heat = L.heatLayer(heatData.slice(0, 10), {radius: 10}).addTo(map);
+    const heat = L.heatLayer(heatData, {radius: targetRadius}).addTo(map);
+    // const heat = L.heatLayer(heatData, {radius: pixelRadius(targetRadius, map)}).addTo(map);
 
     // add layers to the map
     L.control
