@@ -1,18 +1,18 @@
-// const lat = "37.7749";
-// const lon = "-122.4194";
-// const url = `https://nominatim.openstreetmap.org/reverse?lat=<value>&lon=<value>&<params>`;
+const lat = "37.7749";
+const lon = "-122.4194";
+const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`;
 
-// fetch(url, {
-//     headers: {
-//         'User-Agent': 'YourAppName (your-email@example.com)' // Required
-//     }
-// })
-// .then(response => response.json())
-// .then(data => {
-//     console.log("Full Address:", data.display_name);
-//     console.log("City:", data.address.city || data.address.town);
-// })
-// .catch(err => console.error("Error:", err));
+fetch(url, {
+    headers: {
+        'User-Agent': 'YourAppName (your-email@example.com)' 
+    }
+})
+.then(response => response.json())
+.then(data => {
+    console.log("Full Address:", data.display_name);
+    console.log("City:", data.address.country);
+})
+.catch(err => console.error("Error:", err));
 
 
 // Target radius size for a
@@ -23,7 +23,9 @@ const startZoom = 15
 var currentZoom = startZoom
 
 // Initializing Map
-var map = L.map('map').setView([38.9072, -77.0419], startZoom);
+var map = L.map('map').setView([Number(lat), Number(lon)], startZoom);
+
+var marker4 = L.marker([Number(lat), Number(lon)]).addTo(map)
 
 // Converting target meters into pixels
 function pixelRadius(meters, map){
@@ -76,16 +78,6 @@ function formGrid(spacing, startingLocation){
     
 }
 
-function findNextVerticalPoint(distance, startingPoint){
-    var radLat = startingPoint[0] * Math.PI / 180
-    
-    var lat = radLat - distance/6371
-
-    lat = lat * 180 / Math.PI
-
-    return [lat, startingPoint[1]]
-}
-
 secondPoint = findNextVerticalPoint(1, [44.915910, -66.991201])
 
 console.log(secondPoint)
@@ -93,5 +85,3 @@ console.log(secondPoint)
 marker2 = L.marker(secondPoint).addTo(map)
 
 console.log("Distance:", map.distance([44.915910, -66.996201], secondPoint))
-
-marker3 = L.marker([38.8976387, -77.0365528]).addTo(map)
