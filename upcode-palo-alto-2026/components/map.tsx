@@ -1,24 +1,60 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import L, { HeatLatLngTuple, heatLayer, LatLngTuple } from 'leaflet';
+import L, { HeatLatLngTuple, heatLayer, LatLng, LatLngTuple } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.heat';
+import triangleGrid from '@/../grid'
 
 export default function Map() {
-  const mapRef = useRef<L.Map | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
+    const mapRef = useRef<L.Map | null>(null);
+    const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const heatData:HeatLatLngTuple[] = [
-      [40, -110, 100.0], // lat, lng, intensity
-      [50.52, 30.5, 20.0], // lat, lng, intensity
-      [50.6, 30.4, 1.0],
-      [50.62, 30.4, 1.0],
-  ]
+
+    function triangleGrid(startingPoint:HeatLatLngTuple, endingPoint:HeatLatLngTuple, center:LatLngTuple ,length:number){
+        var grid = []
+        const v1x = startingPoint[0] - endingPoint[0] // x distance between start and end
+        const v1y:number = startingPoint[1] - endingPoint[1] // y distance from start to end 
+
+
+        const angle = Math.PI/3
+        const v2x = v1x * Math.cos(angle) - v1y * Math.sin(angle)
+        const v2y = v1x * Math.sin(angle) + v1y * Math.cos(angle)
+
+
+        const xLeftLimit = center[0] - length/2
+        const xRightLimit = center[0] + length/2
+        const yTopLimit = center[1] - length/2
+        const yBottomLimit = center[1] + length/2
+
+
+        const hyp = Math.sqrt(v1x**2 + v1y**2)
+        const limits = Math.floor(length/hyp) + 3
+
+
+        for (let i = -limits; i < limits+1; i ++) {
+        
+            for (let j = -limits; j < limits+1; j ++){
+                let x = startingPoint[0] + j * v1x
+                let y = startingPoint[1] + j * v1y
+                x += i * v2x
+                y += i * v2y
+                if (x > xLeftLimit && x < xRightLimit && y > yTopLimit && y < yBottomLimit){
+                    grid.push([x,y, 100.0])
+                }
+            }
+    
+        }
+        return grid as HeatLatLngTuple[] 
+    }
+  
+
+
 
   const startingZoom = 8;
   const maxZoom = 15;
-  const startingCenter:LatLngTuple = heatData[0]
+
+
   const targetRadius = 3000;
   
   useEffect(() => {
@@ -32,6 +68,15 @@ export default function Map() {
         attribution: '© OpenStreetMap',
       }
     );
+
+    const heatData:HeatLatLngTuple[] = [// triangleGrid(
+        [50.1, -110, 1000.0],
+        [50, -110, 1000.0]]
+        // [40, -100],
+        // 5
+    // )
+    console.log(heatData.length)
+    const startingCenter:LatLngTuple = heatData[0]
 
     const map = L.map(containerRef.current, {
       center: startingCenter,
@@ -59,7 +104,7 @@ export default function Map() {
         return meters / metersPerPixel;
     }
 
-    const heat = L.heatLayer(heatData, {radius: 10}).addTo(map);
+    const heat = L.heatLayer(heatData.slice(0, 10), {radius: 10}).addTo(map);
     // const heat = L.heatLayer(heatData, {radius: pixelRadius(targetRadius, map)}).addTo(map);
 
     // add layers to the map

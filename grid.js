@@ -1,7 +1,8 @@
-function triangleGrid(startingPoint,endingPoint,center,length){
+
+export default function triangleGrid(startingPoint,endingPoint,center,length){
     var grid = []
-    const v1x = startingPoint[0] - endingPoint[0]
-    const v1y = startingPoint[1] - endingPoint[1]
+    const v1x = startingPoint[0] - endingPoint[0] // x distance between start and end
+    const v1y = startingPoint[1] - endingPoint[1] // y distance from start to end 
 
 
     const angle = Math.PI/3
