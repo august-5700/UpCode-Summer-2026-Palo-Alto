@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import L, { HeatLatLngTuple, heatLayer, LatLng, LatLngTuple } from 'leaflet';
+import L, {HeatLatLngTuple, LatLng, LatLngTuple } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.heat';
 import triangleGrid from '@/../grid'
@@ -11,7 +11,7 @@ export default function Map() {
     const containerRef = useRef<HTMLDivElement | null>(null);
 
 
-    function triangleGrid(startingPoint:LatLngTuple, endingPoint:LatLngTuple, center:LatLngTuple ,length:number, intensity:number){
+    async function triangleGrid(startingPoint:LatLngTuple, endingPoint:LatLngTuple, center:LatLngTuple ,length:number, intensity:number){
         var grid:HeatLatLngTuple[] = []
 
 
@@ -45,7 +45,7 @@ export default function Map() {
                 var url = `https://nominatim.openstreetmap.org/reverse?lat=${y}&lon=${x}&format=json`
                 var country = "";
 
-                fetch(url, {
+                await fetch(url, {
                   headers: {
                     'User-Agent': 'YourAppName (your-email@example.com)' 
                     }
@@ -101,7 +101,7 @@ export default function Map() {
         [50.1, -110],
         [50, -110],
         [40, -100],
-        50,
+        5,
         5
     )
     console.log(heatData.length)
