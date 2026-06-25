@@ -47,9 +47,7 @@ for(let i = 0; i < 15; i++){
 }
 
 var heatLayer = L.heatLayer(heatData, {
-    radius: pixelRadius(targetRadius, map),
-    // max: 5,
-    // gradient:{0.4: 'blue', 0.65: 'lime', 1: 'red', 1.4: 'blue', 1.65: 'lime', 2: 'red', 2.4: 'blue', 2.65: 'lime', 3: 'red', 3.4: 'blue', 3.65: 'lime', 4: 'red', 4.4: 'blue', 4.65: 'lime', 5: 'red'}
+    radius: pixelRadius(targetRadius, map)
 }).addTo(map);
 
 map.on('zoomend', function() {

@@ -4,7 +4,7 @@ function triangleGrid(startingPoint,endingPoint,center,length){
     const v1y = startingPoint[1] - endingPoint[1]
 
 
-    const angle = Math.pi/3
+    const angle = Math.PI/3
     const v2x = v1x * Math.cos(angle) - v1y * Math.sin(angle)
     const v2y = v1x * Math.sin(angle) + v1y * Math.cos(angle)
 
@@ -15,7 +15,7 @@ function triangleGrid(startingPoint,endingPoint,center,length){
     const yBottomLimit = center[1] + length/2
 
 
-    const hyp = Math.sqrt(startingPoint**2,endingPoint**2)
+    const hyp = Math.sqrt(v1x**2,v1y**2)
     const limits = Math.floor(length/hyp) + 3
 
 
