@@ -105,7 +105,6 @@ export default function Map() {
     }
 
     const heat = L.heatLayer(heatData.slice(0, 10), {radius: 10}).addTo(map);
-    // const heat = L.heatLayer(heatData, {radius: pixelRadius(targetRadius, map)}).addTo(map);
 
     // add layers to the map
     L.control
