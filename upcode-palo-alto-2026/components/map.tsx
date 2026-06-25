@@ -37,12 +37,27 @@ export default function Map() {
         for (let i = -limits; i < limits+1; i ++) {
         
             for (let j = -limits; j < limits+1; j ++){
-                let x = startingPoint[0] + j * v1x
-                let y = startingPoint[1] + j * v1y
-                x += i * v2x
-                y += i * v2y
-                if (x > xLeftLimit && x < xRightLimit && y > yTopLimit && y < yBottomLimit){
-                    grid.push([x,y, intensity] as HeatLatLngTuple)
+                let y = startingPoint[0] + j * v1x
+                let x = startingPoint[1] + j * v1y
+                y += i * v2x
+                x += i * v2y
+
+                var url = `https://nominatim.openstreetmap.org/reverse?lat=${y}&lon=${x}&format=json`
+                var country = "";
+
+                fetch(url, {
+                  headers: {
+                    'User-Agent': 'YourAppName (your-email@example.com)' 
+                    }
+                  })
+                .then(response => response.json())
+                .then(data => {
+                  country = data.address.country;
+                })
+                .catch(err => console.error("Error:", err));
+
+                if (country == "United States"){
+                    grid.push([y,x, intensity] as HeatLatLngTuple)
                 }
             }
     
