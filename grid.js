@@ -1,4 +1,3 @@
-
 function triangleGrid(startingPoint,endingPoint,center,length){
     var grid = []
     const v1x = startingPoint[0] - endingPoint[0]
