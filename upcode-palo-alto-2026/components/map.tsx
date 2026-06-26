@@ -1,163 +1,106 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import L, {HeatLatLngTuple, LatLng, LatLngTuple } from 'leaflet';
+import { useEffect, useRef, useState } from 'react';
+import L, { HeatLatLngTuple, LatLngTuple } from 'leaflet';
+
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.heat';
-import triangleGrid from '@/../grid'
+
+import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
 
 export default function Map() {
+
+    const containerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<L.Map | null>(null);
-    const containerRef = useRef<HTMLDivElement | null>(null);
 
+    const [heatPoints, setHeatPoints] = useState<HeatLatLngTuple[]>([]);
+    const [loading, setLoading] = useState<Boolean>(true);
 
-    async function triangleGrid(startingPoint:LatLngTuple, endingPoint:LatLngTuple, center:LatLngTuple ,length:number, intensity:number){
-        var grid:HeatLatLngTuple[] = []
+    const startingZoom = 5;
+    const maxZoom = 15;
+    const targetRadius = 30;
 
-
-        const v1x = startingPoint[0] - endingPoint[0] // x distance between start and end
-        const v1y:number = startingPoint[1] - endingPoint[1] // y distance from start to end 
-
-
-        const angle = Math.PI/3
-        const v2x = v1x * Math.cos(angle) - v1y * Math.sin(angle)
-        const v2y = v1x * Math.sin(angle) + v1y * Math.cos(angle)
-
-
-        const xLeftLimit = center[0] - length/2
-        const xRightLimit = center[0] + length/2
-        const yTopLimit = center[1] - length/2
-        const yBottomLimit = center[1] + length/2
-
-
-        const hyp = Math.sqrt(v1x**2 + v1y**2)
-        const limits = Math.floor(length/hyp) + 3
-
-
-        for (let i = -limits; i < limits+1; i ++) {
+    // Generate the grid
+    useEffect(() => {
+        const points = generateTriangleGrid(
+            [50.1, -110],
+            [50.0, -110],
+            [40, -100],
+            50,
+            5
+        );
         
-            for (let j = -limits; j < limits+1; j ++){
-                let y = startingPoint[0] + j * v1x
-                let x = startingPoint[1] + j * v1y
-                y += i * v2x
-                x += i * v2y
+        setHeatPoints(points);
 
-                var url = `https://nominatim.openstreetmap.org/reverse?lat=${y}&lon=${x}&format=json`
-                var country = "";
+    }, []);
 
-                await fetch(url, {
-                  headers: {
-                    'User-Agent': 'YourAppName (your-email@example.com)' 
-                    }
-                  })
-                .then(response => response.json())
-                .then(data => {
-                  country = data.address.country;
-                })
-                .catch(err => console.error("Error:", err));
+    // Create the map after data is ready
+    useEffect(() => {
+        if (!containerRef.current) return;
+        if (mapRef.current) return;
+        // if (heatPoints.length === 0) return;
+        setLoading(true);
 
-                if (country == "United States"){
-                    grid.push([y,x, intensity] as HeatLatLngTuple)
-                }
+        const osm = L.tileLayer(
+            'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+            {
+                maxZoom,
+                attribution: '© OpenStreetMap'
             }
-    
-        }
+        );
 
-        // const tmp:LatLngTuple[] =  [
-        //     [40.1, -110],
-        //     [40, -110],
-        //     [40, -100],
-        // ]
+        const osmHOT = L.tileLayer(
+            'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+            {
+                maxZoom: 19,
+                attribution:
+                    '© OpenStreetMap contributors, Humanitarian OpenStreetMap Team',
+            }
+        );
 
-        // tmp.forEach((pt:LatLngTuple)=>{
-        //     grid.push([pt[0], pt[1], 1000.0])
-        // })
+        const startingCenter: LatLngTuple = [
+            40, -100
+        ];
 
-        return grid as HeatLatLngTuple[] 
-    }
-  
+        const map = L.map(containerRef.current, {
+            center: startingCenter,
+            zoom: startingZoom,
+            layers: [osm],
+        });
 
+        mapRef.current = map;
 
+        const heat = L.heatLayer(heatPoints, {
+            radius: targetRadius,
+        }).addTo(map);
 
-  const startingZoom = 5;
-  const maxZoom = 15;
+        L.control.layers({
+            OpenStreetMap: osm,
+            HOT: osmHOT,
+            Heat: heat,
+        }).addTo(map);
 
+        return () => {
+            map.remove();
+            mapRef.current = null;
+        };
+        setLoading(false)
 
-  const targetRadius = 30;
-  
-  useEffect(() => {
-    if (!containerRef.current || mapRef.current) return;
+    }, [heatPoints]);
 
-    // base street map layer
-    const osm = L.tileLayer(
-      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-      {
-        maxZoom: maxZoom,
-        attribution: '© OpenStreetMap',
-      }
+    return (
+    <div className="relative w-screen h-screen">
+
+        {loading && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center">
+                Loading map...
+            </div>
+        )}
+
+        <div
+            ref={containerRef}
+            className="w-full h-full"
+        />
+    </div>
     );
-
-    const heatData:HeatLatLngTuple[] = triangleGrid(
-        [50.1, -110],
-        [50, -110],
-        [40, -100],
-        5,
-        5
-    )
-    console.log(heatData.length)
-
-    const startingCenter:LatLngTuple = heatData[0]
-
-    const map = L.map(containerRef.current, {
-      center: startingCenter,
-      zoom: startingZoom,
-      layers: [osm],
-    });
-
-    mapRef.current = map;
-    
-    // declare layers here
-    const osmHOT = L.tileLayer(
-      'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
-      {
-        maxZoom: 19,
-        attribution:
-          '© OpenStreetMap contributors, Humanitarian OpenStreetMap Team',
-      }
-    );
-
-
-    // Converting target meters into pixels
-    const pixelRadius = (meters:number, map:L.Map) => {
-        const lat = map.getCenter().lat;
-        const metersPerPixel = 40075016.686 * Math.abs(Math.cos((lat * Math.PI) / 180)) / Math.pow(2, map.getZoom() + 8);
-        return meters / metersPerPixel;
-    }
-
-    const heat = L.heatLayer(heatData, {radius: targetRadius}).addTo(map);
-    // const heat = L.heatLayer(heatData, {radius: pixelRadius(targetRadius, map)}).addTo(map);
-
-    // add layers to the map
-    L.control
-      .layers({
-        OpenStreetMap: osm,
-        HOT: osmHOT,
-        HeatLayer: heat
-      })
-      .addTo(map);
-
-
-
-    return () => {
-      map.remove();
-      mapRef.current = null;
-    };
-  }, []);
-
-//   useEffect(()=>{
-//     heatLayer.setOptions({ radius: pixelRadius(targetRadius, map) })
-//     heatLayer.redraw()
-//   }, [mapRef.current?.getZoom()])
-
-  return <div ref={containerRef} className="w-screen h-screen" />;
 }
