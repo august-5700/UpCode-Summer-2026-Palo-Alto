@@ -74,6 +74,12 @@ export default function Map() {
 
         const heat = L.heatLayer(heatPoints, {
             radius: targetRadius,
+            gradient: {
+                0.4: 'blue',
+                0.65: 'lime',
+                0.995: 'orange',
+                1.0: 'red'
+            }
 
         }).addTo(map);
 
