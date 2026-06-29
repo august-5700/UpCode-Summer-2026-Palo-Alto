@@ -8,6 +8,7 @@ import 'leaflet.heat';
 
 import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
 import { pixelRadius } from '@/utils/grids/convertToMeters';
+import getCounties from '@/utils/api'
 
 export default function Map() {
 
@@ -23,15 +24,15 @@ export default function Map() {
 
     // Generate the grid
     useEffect(() => {
-        const points = generateTriangleGrid(
-            [50.1, -110],
-            [50.0, -110],
-            [40, -100],
-            50,
-            5
-        );
-        
-        setHeatPoints(points);
+        const fetchData = async ()=> {
+            const points = await getCounties();
+            const relevantPointValues:HeatLatLngTuple[] = points.map((pt:any)=>{
+                return [pt.lat || 0, pt.long || 0, (pt.median_gross_rent || 1)/(pt.median_home_value || 1)]
+            })
+            console.log('points: ',points, '\n', 'relevantPointValues', relevantPointValues)
+            setHeatPoints(relevantPointValues);
+        }
+        fetchData()
 
     }, []);
 
@@ -84,25 +85,25 @@ export default function Map() {
 
         var currentZoom = map.getZoom();
 
-        map.on('zoomend', (event: L.LeafletEvent) => {
-            let multiplier = 1
-            if(map.getZoom() < currentZoom){
-                multiplier = 2
-            }else{
-                multiplier = 1/2
-            }
+        // map.on('zoomend', (event: L.LeafletEvent) => {
+        //     let multiplier = 1
+        //     if(map.getZoom() < currentZoom){
+        //         multiplier = 2
+        //     }else{
+        //         multiplier = 1/2
+        //     }
 
-            heat.setOptions({ radius: pixelRadius(targetRadius, map) })
+        //     heat.setOptions({ radius: pixelRadius(targetRadius, map) })
 
-            heat.redraw()
-            currentZoom = map.getZoom()
-        })
-
+        //     heat.redraw()
+        //     currentZoom = map.getZoom()
+        // })
+        
+        setLoading(false)
         return () => {
             map.remove();
             mapRef.current = null;
         };
-        setLoading(false)
 
     }, [heatPoints]);
 
