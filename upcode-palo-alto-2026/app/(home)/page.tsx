@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { LeafletImporter}  from '@/components/leaflet-importer'
 
 export default function Home() {
