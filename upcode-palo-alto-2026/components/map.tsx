@@ -7,6 +7,7 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet.heat';
 
 import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
+import { pixelRadius } from '@/utils/grids/convertToMeters';
 
 export default function Map() {
 
@@ -72,6 +73,7 @@ export default function Map() {
 
         const heat = L.heatLayer(heatPoints, {
             radius: targetRadius,
+
         }).addTo(map);
 
         L.control.layers({
@@ -79,6 +81,22 @@ export default function Map() {
             HOT: osmHOT,
             Heat: heat,
         }).addTo(map);
+
+        var currentZoom = map.getZoom();
+
+        map.on('zoomend', (event: L.LeafletEvent) => {
+            let multiplier = 1
+            if(map.getZoom() < currentZoom){
+                multiplier = 2
+            }else{
+                multiplier = 1/2
+            }
+
+            heat.setOptions({ radius: pixelRadius(targetRadius, map) })
+
+            heat.redraw()
+            currentZoom = map.getZoom()
+        })
 
         return () => {
             map.remove();
