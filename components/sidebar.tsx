@@ -5,7 +5,7 @@ import { X, Home, TrendingUp } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-// Mock data for now — swap for the clicked tract later
+// Mock data for now
 const MOCK = {
   title: "San Jose, Tract 421",
   score: 9.8, // out of 10
