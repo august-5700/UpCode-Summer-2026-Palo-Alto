@@ -9,7 +9,7 @@ import 'leaflet/dist/leaflet.css';
 
 import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
 import { pixelRadius } from '@/utils/grids/convertToMeters';
-import getCounties from '@/utils/api'
+import { getBlocks } from '@/utils/api'
 
 export default function Map() {
 
@@ -26,7 +26,8 @@ export default function Map() {
     // Generate the grid
     useEffect(() => {
         const fetchData = async ()=> {
-            const points = await getCounties();
+            const points1 = await getBlocks();
+            const points = points1.slice(1,3000);
             const relevantPointValues:HeatLatLngTuple[] = points.map((pt:any)=>{
                 return [pt.lat || 0, pt.long || 0, (pt.median_gross_rent || 1)/(pt.median_home_value || 1)]
             })
