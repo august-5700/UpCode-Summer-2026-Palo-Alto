@@ -9,7 +9,7 @@ import 'leaflet/dist/leaflet.css';
 
 import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
 import { pixelRadius } from '@/utils/grids/convertToMeters';
-import getCounties from '@/utils/api'
+import getCounties, { getBlocks } from '@/utils/api'
 
 export default function Map() {
 
@@ -91,6 +91,7 @@ export default function Map() {
         }).addTo(map);
 
         var currentZoom = map.getZoom();
+        var dataLevel = 'counties'
 
         map.on('zoomend', (event: L.LeafletEvent) => {
             let multiplier = 1
@@ -106,7 +107,24 @@ export default function Map() {
             currentZoom = map.getZoom()
             console.log(currentZoom)
 
-            if(currentZoom >= 14){
+            if(currentZoom >= 14 && dataLevel === 'counties'){
+                console.log("switch to blocks");
+                dataLevel = 'blocks';
+
+                const blockPoints = async () =>{
+                    const points = await getBlocks();
+                    const relevantPointValues:HeatLatLngTuple[] = points.map((pt:any)=>{
+                        return [pt.lat || 0, pt.long || 0, (pt.median_gross_rent || 1)/(pt.median_home_value || 1)]
+                    })
+                    console.log('points: ',points, '\n', 'relevantPointValues', relevantPointValues)
+                    setHeatPoints(relevantPointValues);
+                }
+                blockPoints()
+
+            }else if(currentZoom < 14 && dataLevel === 'blocks'){
+                console.log("switch to counties")
+                dataLevel = 'counties';
+
                 
             }
         })
