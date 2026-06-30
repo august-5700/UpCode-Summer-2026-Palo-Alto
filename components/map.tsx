@@ -92,19 +92,24 @@ export default function Map() {
 
         var currentZoom = map.getZoom();
 
-        // map.on('zoomend', (event: L.LeafletEvent) => {
-        //     let multiplier = 1
-        //     if(map.getZoom() < currentZoom){
-        //         multiplier = 2
-        //     }else{
-        //         multiplier = 1/2
-        //     }
+        map.on('zoomend', (event: L.LeafletEvent) => {
+            let multiplier = 1
+            if(map.getZoom() < currentZoom){
+                multiplier = 2
+            }else{
+                multiplier = 1/2
+            }
 
-        //     heat.setOptions({ radius: pixelRadius(targetRadius, map) })
+            heat.setOptions({ radius: pixelRadius(targetRadius, map) * multiplier})
 
-        //     heat.redraw()
-        //     currentZoom = map.getZoom()
-        // })
+            heat.redraw()
+            currentZoom = map.getZoom()
+            console.log(currentZoom)
+
+            if(currentZoom >= 14){
+                
+            }
+        })
         
         setLoading(false)
         return () => {

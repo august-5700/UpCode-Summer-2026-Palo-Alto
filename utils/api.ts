@@ -24,3 +24,15 @@ export default async function getCounties() {
 
   return data;
 }
+
+export async function getBlocks() {
+  const { data, error } = await supabase
+    .from("blocks")
+    .select("*");
+  if (error) {
+    console.error(error);
+    return [];
+  }
+
+  return data;
+}
