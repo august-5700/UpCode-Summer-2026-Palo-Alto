@@ -31,7 +31,9 @@ export default function Map() {
                 return [pt.lat || 0, pt.long || 0, (pt.median_gross_rent || 1)/(pt.median_home_value || 1)]
             })
             console.log('points: ',points, '\n', 'relevantPointValues', relevantPointValues)
-            setHeatPoints(relevantPointValues);
+            const grid = await generateTriangleGrid(relevantPointValues[0], relevantPointValues[1], relevantPointValues[2], 5)
+            console.log(grid)
+            setHeatPoints(grid);
         }
         fetchData()
 
@@ -84,27 +86,22 @@ export default function Map() {
 
         }).addTo(map);
 
-        L.control.layers({
-            OpenStreetMap: osm,
-            HOT: osmHOT,
-            Heat: heat,
-        }).addTo(map);
-
         var currentZoom = map.getZoom();
 
-        // map.on('zoomend', (event: L.LeafletEvent) => {
-        //     let multiplier = 1
-        //     if(map.getZoom() < currentZoom){
-        //         multiplier = 2
-        //     }else{
-        //         multiplier = 1/2
-        //     }
+        map.on('zoomend', () => {
+            let multiplier = 1
+            if(map.getZoom() > currentZoom){
+                multiplier = 2
+            }else{
+                multiplier = 1/2
+            }
+            console.log('pixelrad: ', pixelRadius(targetRadius, map))
 
-        //     heat.setOptions({ radius: pixelRadius(targetRadius, map) })
+            heat.setOptions({ radius: pixelRadius(targetRadius, map)})
 
-        //     heat.redraw()
-        //     currentZoom = map.getZoom()
-        // })
+            heat.redraw()
+            currentZoom = map.getZoom()
+        })
         
         setLoading(false)
         return () => {
