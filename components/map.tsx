@@ -7,11 +7,15 @@ import 'leaflet.heat';
 import 'leaflet/dist/leaflet.css';
 
 
-import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
-import { pixelRadius } from '@/utils/grids/convertToMeters';
+// import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
+// import { pixelRadius } from '@/utils/grids/convertToMeters';
 import { getBlocks } from '@/utils/api'
+//for selecting coordinates
+interface MapProps {
+    onSelectCoords: (lat: number, lng: number) => void;
+}
 
-export default function Map() {
+export default function Map({ onSelectCoords }: MapProps) {
 
     const containerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<L.Map | null>(null);
@@ -73,6 +77,10 @@ export default function Map() {
         });
 
         mapRef.current = map;
+        // Add click event listener to map for selecting coordinates
+        map.on("click", (e: L.LeafletMouseEvent) => {
+            onSelectCoords(e.latlng.lat, e.latlng.lng);
+        });
 
         const heat = L.heatLayer(heatPoints, {
             radius: targetRadius,

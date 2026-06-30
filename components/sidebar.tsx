@@ -1,29 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { X, Home, DollarSign, Building2, TrendingUp, TrendingDown } from "lucide-react";
+import { X, Home, DollarSign, Building2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import type { TractData } from "@/utils/api";
 
-// Mock data for now
-const MOCK = {
-  title: "San Jose, Tract 421",
-  score: 9.8, // out of 10
-  regional: 96,
-  national: 99,
-  metrics: [
-    { label: "Median Home Value", value: "$1,250,000", sub: "±$35,000", change: 8, icon: Home },
-    { label: "Median Gross Rent", value: "$3,400", sub: "/mo", change: 5, icon: DollarSign },
-    { label: "Price-to-Rent Ratio", value: "30.6", sub: "", change: -2, icon: Building2 },
-  ],
-};
+const ICONS = { home: Home, dollar: DollarSign, building: Building2 } as const;
 
-export default function Sidebar() {
-  const [open, setOpen] = useState(true);
-  const data = MOCK;
-
-  if (!open) return null;
-
+export default function Sidebar({ data, onClose }: { data: TractData; onClose: () => void }) {
   return (
     <Card className="absolute right-0 top-0 z-[1000] flex h-screen w-[420px] flex-col gap-6 overflow-y-auto rounded-l-3xl border-0 bg-white/95 p-8 shadow-2xl backdrop-blur">
       {/* Header */}
@@ -33,7 +17,7 @@ export default function Sidebar() {
           variant="ghost"
           size="icon"
           className="-mr-2 -mt-1 rounded-full text-gray-400 hover:text-gray-900"
-          onClick={() => setOpen(false)}
+          onClick={onClose}
         >
           <X className="h-5 w-5" />
         </Button>
@@ -45,21 +29,23 @@ export default function Sidebar() {
           HeatMap Score
         </p>
         <p className="mt-1 flex items-baseline gap-1 font-extrabold leading-none text-green-600">
-          <span className="text-8xl">{data.score}</span>
+          <span className="text-8xl">{data.score.toFixed(1)}</span>
           <span className="text-2xl text-gray-300">/10</span>
         </p>
 
-        {/* Percentiles */}
-        <div className="mt-6 flex w-full justify-between text-sm">
-          <span>
-            <span className="font-bold text-emerald-600">{data.regional}%</span>
-            <span className="text-gray-500"> · Regional</span>
-          </span>
-          <span>
-            <span className="font-bold text-violet-600">{data.national}%</span>
-            <span className="text-gray-500"> · National</span>
-          </span>
-        </div>
+        {/* Percentiles (only when available) */}
+        {data.regional != null && data.national != null && (
+          <div className="mt-6 flex w-full justify-between text-sm">
+            <span>
+              <span className="font-bold text-emerald-600">{data.regional}%</span>
+              <span className="text-gray-500"> · Regional</span>
+            </span>
+            <span>
+              <span className="font-bold text-violet-600">{data.national}%</span>
+              <span className="text-gray-500"> · National</span>
+            </span>
+          </div>
+        )}
 
         {/* Gradient score bar with marker */}
         <div className="relative mt-2 h-2.5 w-full rounded-full bg-[linear-gradient(to_right,#ef4444,#f59e0b,#eab308,#22c55e,#3b82f6)]">
@@ -79,8 +65,7 @@ export default function Sidebar() {
         </p>
         <div className="flex flex-col gap-1">
           {data.metrics.map((m) => {
-            const Icon = m.icon;
-            const up = m.change >= 0;
+            const Icon = ICONS[m.icon];
             return (
               <div
                 key={m.label}
@@ -92,15 +77,9 @@ export default function Sidebar() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-xs text-gray-500">{m.label}</p>
                   <p className="font-bold text-gray-900">
-                    {m.value} <span className="text-xs font-normal text-gray-400">{m.sub}</span>
+                    {m.value}
+                    {m.sub ? <span className="text-xs font-normal text-gray-400"> {m.sub}</span> : null}
                   </p>
-                </div>
-                <div className={`text-right text-sm font-semibold ${up ? "text-emerald-600" : "text-red-500"}`}>
-                  <p className="flex items-center justify-end gap-1">
-                    {up ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                    {Math.abs(m.change)}%
-                  </p>
-                  <p className="text-xs font-normal text-gray-400">YoY</p>
                 </div>
               </div>
             );
