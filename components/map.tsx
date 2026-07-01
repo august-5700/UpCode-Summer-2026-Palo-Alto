@@ -13,12 +13,13 @@ import getCounties, { getBlocks } from '@/utils/api'
 //for selecting coordinates
 interface MapProps {
     onSelectCoords: (lat: number, lng: number) => void;
+    onHover: (block: any | null, x: number, y: number) => void;
 }
 import { initialize } from 'next/dist/server/lib/render-server';
 import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
 
-export default function Map({ onSelectCoords }: MapProps) {
-
+export default function Map({ onSelectCoords, onHover }: MapProps) {
+    const pointsRef = useRef<any[]>([]);
     const containerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<L.Map | null>(null);
 
@@ -35,6 +36,7 @@ export default function Map({ onSelectCoords }: MapProps) {
         const fetchData = async ()=> {
             const points1 = await getBlocks();
             const points = points1.slice(1,3000);
+            pointsRef.current = points;
             const relevantPointValues:HeatLatLngTuple[] = points.map((pt:any)=>{
                 return [pt.lat || 0, pt.long || 0, (pt.median_gross_rent || 1)/(pt.median_home_value || 1)]
             })
@@ -93,6 +95,27 @@ export default function Map({ onSelectCoords }: MapProps) {
         map.on("click", (e: L.LeafletMouseEvent) => {
             onSelectCoords(e.latlng.lat, e.latlng.lng);
         });
+        //ON HOVER STUFF
+        let rafPending = false;
+        map.on("mousemove", (e: L.LeafletMouseEvent) => {
+            const { lat, lng } = e.latlng;
+            const cx = e.originalEvent.clientX;
+            const cy = e.originalEvent.clientY;
+            if (rafPending) return;
+            rafPending = true;
+            requestAnimationFrame(() => {
+                rafPending = false;
+                const pts = pointsRef.current;
+                if (!pts.length) { onHover(null, 0, 0); return; }
+                let nearest = pts[0], best = Infinity;
+                for (const p of pts) {
+                    const d = (p.lat - lat) ** 2 + (p.long - lng) ** 2;
+                    if (d < best) { best = d; nearest = p; }
+                }
+                onHover(nearest, cx, cy);
+            });
+        });
+        map.on("mouseout", () => onHover(null, 0, 0));
 
         const heat = L.heatLayer(heatPoints, {
             radius: targetRadius,
