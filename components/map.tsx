@@ -144,6 +144,9 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
         var dataLevel = 'counties'
 
         map.on('zoomend', async () => {
+            currentZoom = map.getZoom();
+            console.log(currentZoom)
+            console.log(dataLevel)
             if(currentZoom >= 11){
                 console.log("switch to blocks");
 
@@ -169,8 +172,8 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
                 sortedData = await countyPoints()
             }
             
-            const subDivisions = 70
-            grid_spacing = map.getBounds().getSouthEast().distanceTo(map.getBounds().getNorthWest())/subDivisions;
+            const subDivisions = 20
+            grid_spacing = map.getBounds().getSouthEast().distanceTo(map.getBounds().getSouthWest())/subDivisions;
             console.log(grid_spacing)
 
             const grid = generateTriangleGrid(
@@ -189,14 +192,11 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
             setHeatPoints(combinedDataPoints);
 
 
-            const r = heatRadiusForZoom(map, grid_spacing);
+            const r = 4
             heat.setOptions({ radius: r, blur: r * 0.5 });
             heat.setOptions({ radius: heatRadiusForZoom(map, grid_spacing) });
 
             heat.redraw();
-            currentZoom = map.getZoom();
-            console.log(currentZoom)
-            console.log(dataLevel)
         })
 
         map.on("drag", async () => {
