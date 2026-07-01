@@ -3,13 +3,14 @@ import { point } from "@turf/helpers";
 import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
 import { Feature, MultiPolygon, Polygon } from "geojson";
 import usaData from '@/data/usa.json'
-import findClosestPoint from "./findClosestPoint";
+import findClosestPoint from "../findClosestPoint";
 
 export async function generateTriangleGrid(
     startingPoint: LatLngTuple,
     endingPoint: LatLngTuple,
     center: LatLngTuple,
     length: number,
+    data: HeatLatLngTuple[],
     // intensity: number
 ): Promise<HeatLatLngTuple[]> {
 
@@ -38,7 +39,7 @@ export async function generateTriangleGrid(
             lon += i * v2lon;
 
             const pt = point([lon, lat]);
-            const closestPoint = await findClosestPoint(lat, lon);
+            const closestPoint = findClosestPoint([lat, lon], data);
             // console.log(closestPoint)
             const intensity = closestPoint[2]
 

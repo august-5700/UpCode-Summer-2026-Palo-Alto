@@ -31,7 +31,14 @@ export default function Map() {
                 return [pt.lat || 0, pt.long || 0, (pt.median_gross_rent || 1)/(pt.median_home_value || 1)]
             })
             console.log('points: ',points, '\n', 'relevantPointValues', relevantPointValues)
-            const grid = await generateTriangleGrid(relevantPointValues[0], relevantPointValues[1], relevantPointValues[2], 5)
+            const grid = await generateTriangleGrid(
+                relevantPointValues[0], // startingPoint
+                relevantPointValues[1], // endingPoint
+                relevantPointValues[2], // center
+                40, // length
+                relevantPointValues // data
+            )
+
             console.log(grid)
             setHeatPoints(grid);
         }
@@ -88,20 +95,20 @@ export default function Map() {
 
         var currentZoom = map.getZoom();
 
-        map.on('zoomend', () => {
-            let multiplier = 1
-            if(map.getZoom() > currentZoom){
-                multiplier = 2
-            }else{
-                multiplier = 1/2
-            }
-            console.log('pixelrad: ', pixelRadius(targetRadius, map))
+        // map.on('zoomend', () => {
+        //     let multiplier = 1
+        //     if(map.getZoom() > currentZoom){
+        //         multiplier = 2
+        //     }else{
+        //         multiplier = 1/2
+        //     }
+        //     console.log('pixelrad: ', pixelRadius(targetRadius, map))
 
-            heat.setOptions({ radius: pixelRadius(targetRadius, map)})
+        //     heat.setOptions({ radius: pixelRadius(targetRadius, map)})
 
-            heat.redraw()
-            currentZoom = map.getZoom()
-        })
+        //     heat.redraw()
+        //     currentZoom = map.getZoom()
+        // })
         
         setLoading(false)
         return () => {
