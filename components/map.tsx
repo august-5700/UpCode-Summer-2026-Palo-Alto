@@ -99,6 +99,7 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
             center: startingCenter,
             zoom: currentZoom,
             layers: [osm],
+            zoomControl: false
         });
 
         mapRef.current = map;
@@ -227,7 +228,7 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
 
         <div
             ref={containerRef}
-            className="w-full h-full"
+            className="w-full h-full z-0"
         />
     </div>
     );
