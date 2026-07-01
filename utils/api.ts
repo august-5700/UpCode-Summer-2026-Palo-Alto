@@ -44,7 +44,7 @@ export async function getBlocks() {
  * -Gross rental yield  (annual rent ÷ home value) — cash flow   [60%]
  * -Occupancy rate      (occupied ÷ total units) — demand      [40%]
  */
-function computeHeatScore(
+export function computeHeatScore(
   medianHomeValue: number | string | null | undefined,
   medianGrossRent: number | string | null | undefined,
   totalHousingUnits: number | string | null | undefined,
