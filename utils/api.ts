@@ -198,7 +198,7 @@ export async function getBlocksWithinRange(map: L.Map) {
 
   const { data, error } = await supabase
   .from("blocks")
-  .select("* WHERE lat >= $(lowest) AND lat <= $(highest) AND long >= $(leftmost) AND long <= $(rightmost) LIMIT 5000");
+  .select("* WHERE lat >= $(lowest) AND lat <= $(highest) AND long >= $(leftmost) AND long <= $(rightmost) LIMIT 3000");
 
   if (error) {
   console.error("Error fetching blocks:", error);

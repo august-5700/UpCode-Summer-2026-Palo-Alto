@@ -8,7 +8,7 @@ import 'leaflet/dist/leaflet.css';
 import { heatRadiusForZoom } from '@/utils/heatRadius';
 
 import { pixelRadius } from '@/utils/convertToMeters';
-import getCounties, { getBlocks } from '@/utils/api'
+import getCounties, { getBlocks, getBlocksWithinRange} from '@/utils/api'
 import { combinePoints } from '@/utils/combinePoints';
 //for selecting coordinates
 interface MapProps {
@@ -25,10 +25,11 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
     const mapRef = useRef<L.Map | null>(null);
 
     const [heatPoints, setHeatPoints] = useState<HeatLatLngTuple[]>([]);
+    var sortedData: HeatLatLngTuple[] = [];
     const [loading, setLoading] = useState<Boolean>(true);
 
     var currentZoom = mapRef.current?.getZoom() || 5;
-    var grid_spacing = 25000
+    let grid_spacing = 25000
     var dataLevel = currentZoom >= 11 ? 'blocks' : 'counties';
 
     const maxZoom = 15;
@@ -50,8 +51,7 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
             const lngs = relevantPointValues.map((p) => p[1]);
             const bottomLeft: LatLngTuple = [Math.min(...lats), Math.min(...lngs)];
             const topRight: LatLngTuple = [Math.max(...lats), Math.max(...lngs)];
-            const sortedData = [...relevantPointValues].sort((a, b) => a[0] - b[0]);
-
+            sortedData = [...relevantPointValues].sort((a, b) => a[0] - b[0]);
             const grid = generateTriangleGrid(
                 bottomLeft,
                 topRight,
@@ -143,16 +143,7 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
         var dataLevel = 'counties'
 
         map.on('zoomend', async () => {
-            const r = heatRadiusForZoom(map, grid_spacing);
-            heat.setOptions({ radius: r, blur: r * 0.5 });
-            heat.setOptions({ radius: heatRadiusForZoom(map, grid_spacing) });
-
-            heat.redraw();
-            currentZoom = map.getZoom();
-            console.log(currentZoom)
-            console.log(dataLevel)
-
-            if(currentZoom >= 11 && dataLevel === 'counties'){
+            if(currentZoom >= 11){
                 console.log("switch to blocks");
 
                 const points = await getBlocksWithinRange(map);
@@ -161,9 +152,9 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
                     return [pt.lat || 0, pt.long || 0, (pt.median_gross_rent || 1)/(pt.median_home_value || 1)]
                 })
                 console.log('points: ',points, '\n', 'relevantPointValues', relevantPointValues)
-                setHeatPoints(relevantPointValues);
+                sortedData = relevantPointValues.sort((a, b) => a[0] - b[0]);
 
-            } else if(currentZoom < 11 && dataLevel === 'blocks'){
+            } else if(currentZoom < 11){
                 console.log("switch to counties")
 
                 const countyPoints = async () =>{
@@ -171,11 +162,40 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
                     const relevantPointValues:HeatLatLngTuple[] = points.map((pt:any)=>{
                         return [pt.lat || 0, pt.long || 0, (pt.median_gross_rent || 1)/(pt.median_home_value || 1)]
                     })
-                    // console.log('points: ',points, '\n', 'relevantPointValues', relevantPointValues)
-                    setHeatPoints(relevantPointValues);
+                    console.log('points: ',points, '\n', 'relevantPointValues', relevantPointValues)
+                    return relevantPointValues.sort((a, b) => a[0] - b[0]);
                 }
-                countyPoints()
+                sortedData = await countyPoints()
             }
+            
+            const subDivisions = 70
+            grid_spacing = map.getBounds().getSouthEast().distanceTo(map.getBounds().getNorthWest())/subDivisions;
+            console.log(grid_spacing)
+
+            const grid = generateTriangleGrid(
+                [map.getBounds().getSouth(),map.getBounds().getWest()], 
+                [map.getBounds().getNorth(), map.getBounds().getEast()], 
+                grid_spacing
+            );
+            // console.log(grid);
+            console.log("hihihihi")
+            console.log(sortedData);
+
+            const withData = attachWeightedData(grid, sortedData);
+            const combinedDataPoints = combinePoints(withData);
+
+            console.log(combinedDataPoints);
+            setHeatPoints(combinedDataPoints);
+
+
+            const r = heatRadiusForZoom(map, grid_spacing);
+            heat.setOptions({ radius: r, blur: r * 0.5 });
+            heat.setOptions({ radius: heatRadiusForZoom(map, grid_spacing) });
+
+            heat.redraw();
+            currentZoom = map.getZoom();
+            console.log(currentZoom)
+            console.log(dataLevel)
         })
 
         map.on("drag", async () => {
