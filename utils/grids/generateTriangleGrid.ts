@@ -8,18 +8,22 @@ import findClosestPoint from "../findClosestPoint";
 export async function generateTriangleGrid(
     startingPoint: LatLngTuple,
     endingPoint: LatLngTuple,
-    center: LatLngTuple,
     length: number,
-    data: HeatLatLngTuple[],
+    data: HeatLatLngTuple[],    
     // intensity: number
 ): Promise<HeatLatLngTuple[]> {
 
+    // use polygon
     const usa = usaData as Feature<Polygon | MultiPolygon>
+
+    // this gets returned
     const grid: HeatLatLngTuple[] = [];
 
+    // differences in lat and lon between pts
     const v1lat = startingPoint[0] - endingPoint[0];
     const v1lon = startingPoint[1] - endingPoint[1];
 
+    // angle for equilateral triangle
     const angle = Math.PI / 3;
 
     const v2lat = v1lat * Math.cos(angle) - v1lon * Math.sin(angle);

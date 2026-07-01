@@ -33,7 +33,7 @@ export default function Map({ onSelectCoords }: MapProps) {
     // Generate the grid
     useEffect(() => {
         const fetchData = async ()=> {
-            const points1 = await getBlocks();
+            const points1 = await getCounties();
             const points = points1.slice(1,3000);
             const relevantPointValues:HeatLatLngTuple[] = points.map((pt:any)=>{
                 return [pt.lat || 0, pt.long || 0, (pt.median_gross_rent || 1)/(pt.median_home_value || 1)]
@@ -42,8 +42,7 @@ export default function Map({ onSelectCoords }: MapProps) {
             const grid = await generateTriangleGrid(
                 relevantPointValues[0], // startingPoint
                 relevantPointValues[1], // endingPoint
-                relevantPointValues[2], // center
-                40, // length
+                200, // length
                 relevantPointValues // data
             )
 
