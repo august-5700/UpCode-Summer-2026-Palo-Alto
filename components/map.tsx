@@ -5,11 +5,11 @@ import L, { LatLngTuple, HeatLatLngTuple } from 'leaflet';
 import 'leaflet.heat';
 
 import 'leaflet/dist/leaflet.css';
+import { heatRadiusForZoom } from '@/utils/heatRadius';
 
-
-// import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
 import { pixelRadius } from '@/utils/convertToMeters';
 import getCounties, { getBlocks } from '@/utils/api'
+import { combinePoints } from '@/utils/combinePoints';
 //for selecting coordinates
 interface MapProps {
     onSelectCoords: (lat: number, lng: number) => void;
@@ -17,6 +17,7 @@ interface MapProps {
 }
 import { initialize } from 'next/dist/server/lib/render-server';
 import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
+import { attachData, attachWeightedData } from '@/utils/attachData';
 
 export default function Map({ onSelectCoords, onHover }: MapProps) {
     const pointsRef = useRef<any[]>([]);
@@ -27,6 +28,7 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
     const [loading, setLoading] = useState<Boolean>(true);
 
     var currentZoom = mapRef.current?.getZoom() || 5;
+    var grid_spacing = 25000
 
     const maxZoom = 15;
     const targetRadius = 30;
@@ -34,23 +36,29 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
     // Generate the grid
     useEffect(() => {
         const fetchData = async ()=> {
-            const points1 = await getBlocks();
-            const points = points1.slice(1,3000);
-            pointsRef.current = points;
+            const points1 = await getCounties();
+            const points = points1
             const relevantPointValues:HeatLatLngTuple[] = points.map((pt:any)=>{
                 return [pt.lat || 0, pt.long || 0, (pt.median_gross_rent || 1)/(pt.median_home_value || 1)]
             })
             console.log('points: ',points, '\n', 'relevantPointValues', relevantPointValues)
-            const grid = await generateTriangleGrid(
-                relevantPointValues[0], // startingPoint
-                relevantPointValues[1], // endingPoint
-                relevantPointValues[2], // center
-                40, // length
-                relevantPointValues // data
-            )
 
-            console.log(grid)
-            setHeatPoints(grid);
+            const lats = relevantPointValues.map((p) => p[0]);
+            const lngs = relevantPointValues.map((p) => p[1]);
+            const bottomLeft: LatLngTuple = [Math.min(...lats), Math.min(...lngs)];
+            const topRight: LatLngTuple = [Math.max(...lats), Math.max(...lngs)];
+            const sortedData = [...relevantPointValues].sort((a, b) => a[0] - b[0]);
+
+            const grid = generateTriangleGrid(
+                bottomLeft,
+                topRight,
+                grid_spacing, // spacing in equator-meters (Mercator units)
+            );
+            const withData = attachWeightedData(grid, sortedData);
+            const combinedDataPoints = combinePoints(withData)
+
+            console.log(combinedDataPoints);
+            setHeatPoints(combinedDataPoints);
         }
         fetchData()
 
@@ -118,7 +126,8 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
         map.on("mouseout", () => onHover(null, 0, 0));
 
         const heat = L.heatLayer(heatPoints, {
-            radius: targetRadius,
+            radius: heatRadiusForZoom(map, grid_spacing),
+            blur: heatRadiusForZoom(map, grid_spacing) * 0.5,
             gradient: {
                 0.4: 'blue',
                 0.65: 'lime',
@@ -130,20 +139,14 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
 
         var dataLevel = 'counties'
 
-        // map.on('zoomend', () => {
-        //     let multiplier = 1
-        //     if(map.getZoom() > currentZoom){
-        //         multiplier = 2
-        //     }else{
-        //         multiplier = 1/2
-        //     }
-        //     console.log('pixelrad: ', pixelRadius(targetRadius, map))
+        map.on('zoomend', () => {
+            const r = heatRadiusForZoom(map, grid_spacing);
+            heat.setOptions({ radius: r, blur: r * 0.5 });
+            heat.setOptions({ radius: heatRadiusForZoom(map, grid_spacing) });
 
-        //     heat.setOptions({ radius: pixelRadius(targetRadius, map)})
-
-        //     heat.redraw()
-        //     currentZoom = map.getZoom()
-        // })
+            heat.redraw();
+            currentZoom = map.getZoom();
+        });
         
         setLoading(false)
         return () => {
