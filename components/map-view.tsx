@@ -5,6 +5,7 @@ import Map from "./map";
 import Sidebar from "./sidebar";
 import MapTooltip from "./map-tooltip";
 import { getTractByCoords, type TractData } from "@/utils/api";
+import { Search } from "./search";
 
 type Hover = { block: any; x: number; y: number } | null;
 
@@ -58,6 +59,7 @@ export default function MapView() {
       <Map onSelectCoords={handleSelect} onHover={handleHover} />
       {tract && <Sidebar data={tract} onClose={() => setTract(null)} />}
       {hover && <MapTooltip block={hover.block} x={hover.x} y={hover.y} />}
+      <Search/>
     </>
   );
 }
