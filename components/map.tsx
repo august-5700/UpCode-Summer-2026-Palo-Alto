@@ -15,6 +15,7 @@ interface MapProps {
     onSelectCoords: (lat: number, lng: number) => void;
 }
 import { initialize } from 'next/dist/server/lib/render-server';
+import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
 
 export default function Map({ onSelectCoords }: MapProps) {
 
@@ -38,7 +39,16 @@ export default function Map({ onSelectCoords }: MapProps) {
                 return [pt.lat || 0, pt.long || 0, (pt.median_gross_rent || 1)/(pt.median_home_value || 1)]
             })
             console.log('points: ',points, '\n', 'relevantPointValues', relevantPointValues)
-            setHeatPoints(relevantPointValues);
+            const grid = await generateTriangleGrid(
+                relevantPointValues[0], // startingPoint
+                relevantPointValues[1], // endingPoint
+                relevantPointValues[2], // center
+                40, // length
+                relevantPointValues // data
+            )
+
+            console.log(grid)
+            setHeatPoints(grid);
         }
         fetchData()
 
@@ -95,50 +105,22 @@ export default function Map({ onSelectCoords }: MapProps) {
 
         }).addTo(map);
 
-        L.control.layers({
-            OpenStreetMap: osm,
-            HOT: osmHOT,
-            Heat: heat,
-        }).addTo(map);
-
         var dataLevel = 'counties'
 
-        map.on('zoomend', (event: L.LeafletEvent) => {
-            heat.setOptions({ radius: pixelRadius(targetRadius, map)})
-            heat.redraw()
+        // map.on('zoomend', () => {
+        //     let multiplier = 1
+        //     if(map.getZoom() > currentZoom){
+        //         multiplier = 2
+        //     }else{
+        //         multiplier = 1/2
+        //     }
+        //     console.log('pixelrad: ', pixelRadius(targetRadius, map))
 
-            currentZoom = map.getZoom()
-            console.log(currentZoom)
+        //     heat.setOptions({ radius: pixelRadius(targetRadius, map)})
 
-            if(currentZoom >= 14 && dataLevel === 'counties'){
-                console.log("switch to blocks");
-                dataLevel = 'blocks';
-
-                const blockPoints = async () =>{
-                    const points = await getBlocks();
-                    const relevantPointValues:HeatLatLngTuple[] = points.map((pt:any)=>{
-                        return [pt.lat || 0, pt.long || 0, (pt.median_gross_rent || 1)/(pt.median_home_value || 1)]
-                    })
-                    console.log('points: ',points, '\n', 'relevantPointValues', relevantPointValues)
-                    setHeatPoints(relevantPointValues);
-                }
-                blockPoints()
-
-            }else if(currentZoom < 14 && dataLevel === 'blocks'){
-                console.log("switch to counties")
-                dataLevel = 'counties';   
-
-                const countyPoints = async () =>{
-                    const points = await getCounties();
-                    const relevantPointValues:HeatLatLngTuple[] = points.map((pt:any)=>{
-                        return [pt.lat || 0, pt.long || 0, (pt.median_gross_rent || 1)/(pt.median_home_value || 1)]
-                    })
-                    console.log('points: ',points, '\n', 'relevantPointValues', relevantPointValues)
-                    setHeatPoints(relevantPointValues);
-                }
-                countyPoints()
-            }
-        })
+        //     heat.redraw()
+        //     currentZoom = map.getZoom()
+        // })
         
         setLoading(false)
         return () => {
