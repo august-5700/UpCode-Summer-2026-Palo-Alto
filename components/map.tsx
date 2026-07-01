@@ -7,12 +7,16 @@ import 'leaflet.heat';
 import 'leaflet/dist/leaflet.css';
 
 
-import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
+// import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
 import { pixelRadius } from '@/utils/grids/convertToMeters';
 import getCounties, { getBlocks } from '@/utils/api'
+//for selecting coordinates
+interface MapProps {
+    onSelectCoords: (lat: number, lng: number) => void;
+}
 import { initialize } from 'next/dist/server/lib/render-server';
 
-export default function Map() {
+export default function Map({ onSelectCoords }: MapProps) {
 
     const containerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<L.Map | null>(null);
@@ -28,7 +32,8 @@ export default function Map() {
     // Generate the grid
     useEffect(() => {
         const fetchData = async ()=> {
-            const points = await getCounties();
+            const points1 = await getBlocks();
+            const points = points1.slice(1,3000);
             const relevantPointValues:HeatLatLngTuple[] = points.map((pt:any)=>{
                 return [pt.lat || 0, pt.long || 0, (pt.median_gross_rent || 1)/(pt.median_home_value || 1)]
             })
@@ -74,6 +79,10 @@ export default function Map() {
         });
 
         mapRef.current = map;
+        // Add click event listener to map for selecting coordinates
+        map.on("click", (e: L.LeafletMouseEvent) => {
+            onSelectCoords(e.latlng.lat, e.latlng.lng);
+        });
 
         const heat = L.heatLayer(heatPoints, {
             radius: targetRadius,

@@ -27,12 +27,116 @@ export default async function getCounties() {
 
 export async function getBlocks() {
   const { data, error } = await supabase
-    .from("blocks")
-    .select("*");
+  .from("blocks")
+  .select("*");
+
   if (error) {
-    console.error(error);
-    return [];
+  console.error("Error fetching blocks:", error);
+  return [];
+  }
+  console.log("blocks was called")
+  console.log(data)
+  return data;
+}
+
+// ---- Sidebar data --~~~:::::::
+
+export type Metric = {
+  label: string;
+  value: string;
+  sub?: string;
+  icon: "home" | "dollar" | "building";
+};
+
+export type TractData = {
+  title: string;
+  score: number;
+  regional: number | null;
+  national: number | null;
+  metrics: Metric[];
+};
+
+
+const num = (v: unknown): number | null => {
+  if (v === null || v === undefined || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 0 ? n : null;
+};
+
+const money = (v: number | null) =>
+  v == null ? "N/A" : "$" + Math.round(v).toLocaleString();
+
+export async function getTractByCoords(
+  lat: number,
+  lng: number
+): Promise<TractData | null> {
+  // first: Candidate blocks near the click. Widen the box until we hit data
+  //    (or give up over oceans / empty areas).
+  let blocks: any[] = [];
+  for (const d of [0.15, 0.5, 1.5]) {
+    const { data, error } = await supabase
+      .from("blocks")
+      .select("*")
+      .gte("lat", lat - d)
+      .lte("lat", lat + d)
+      .gte("long", lng - d)
+      .lte("long", lng + d)
+      .limit(3000);
+    if (error) {
+      console.error(error);
+      return null;
+    }
+    if (data && data.length) {
+      blocks = data;
+      break;
+    }
+  }
+  if (!blocks.length) return null;
+
+  // 2. Nearest block (good enough for this)
+  let block = blocks[0];
+  let best = Infinity;
+  for (const b of blocks) {
+    const dist = (b.lat - lat) ** 2 + (b.long - lng) ** 2;
+    if (dist < best) {
+      best = dist;
+      block = b;
+    }
   }
 
-  return data;
+  // 3.County NAME from shared FIPS codes (NOT counties.id)
+  const { data: county } = await supabase
+    .from("counties")
+    .select("name")
+    .eq("state_fip", block.state_fip)
+    .eq("county_fip", block.county_fip)
+    .maybeSingle();
+
+  // 4. for the sidebar
+  const homeValue = num(block.median_home_value);
+  const homeMoe = num(block.median_home_value_moe);
+  const rent = num(block.median_gross_rent);
+  const totalUnits = num(block.total_housing_units);
+  const vacant = num(block.vacant_units);
+
+  const vacancyRate = totalUnits ? ((vacant ?? 0) / totalUnits) * 100 : null;
+  const priceToRent = homeValue && rent ? homeValue / (rent * 12) : null;
+
+  // Placeholder score: gross rent yield , 0–10
+  // TODO: Heatmap score!!
+  const yieldPct = homeValue && rent ? (rent * 12 / homeValue) * 100 : 0;
+  const score = Math.max(0, Math.min(10, Number(yieldPct.toFixed(1))));
+
+  return {
+    title: `${county?.name ?? "Unknown County"} · Tract ${block.tract_code}`,
+    score,
+    regional: null, // TODO: needs a percentile across the dataset (we can use Postgres RPC)
+    national: null, // TODO same reason as above
+    metrics: [
+      { label: "Median Home Value", value: money(homeValue), sub: homeMoe ? `±${money(homeMoe)}` : "", icon: "home" },
+      { label: "Median Gross Rent", value: rent ? `${money(rent)}/mo` : "N/A", icon: "dollar" },
+      { label: "Vacancy Rate", value: vacancyRate != null ? `${vacancyRate.toFixed(1)}%` : "N/A", icon: "building" },
+      { label: "Price-to-Rent", value: priceToRent != null ? `${priceToRent.toFixed(1)}×` : "N/A", icon: "building" },
+    ],
+  };
 }
