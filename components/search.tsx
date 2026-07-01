@@ -1,23 +1,40 @@
-"use client";
+"use client"
 
-import React from "react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox"
 
+const tracts = [
+  "Next.js",
+  "SvelteKit",
+  "Nuxt.js",
+  "Remix",
+  "Astro"
+]
 
 export function Search() {
-    if (!open) return null;
-
-    return (
-    <Card className="absolute top-4 left-4 z-[1000]">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-            <input
-            type="text"
-            placeholder="Search..."
-            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
-            />
-        </div>
-    </Card>
-    );
+    // useEffect with empty dep to fetch tracts
+    // onchange on the input leads to a function to update the top 5 results, which should use a useState
+    // on enter or search or whatever, just pick the first one
+    // figure out how to change the arrow thingy. id suggest digging around in the combobox file for an icon and just deleting it but if you have another idea thats fine
+  return (
+    <Combobox items={tracts}>
+      <ComboboxInput placeholder="Search..."  className='absolute top-4 left-6 z-1000 bg-white'/>
+      <ComboboxContent className='z-100 bg-white'>
+        <ComboboxEmpty className='z-100 bg-white'>No items found.</ComboboxEmpty>
+        <ComboboxList className='z-1000 bg-white'>
+          {(item) => (
+            <ComboboxItem key={item} value={item}>
+              {item}
+            </ComboboxItem>
+          )}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
+  )
 }
