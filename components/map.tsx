@@ -10,6 +10,7 @@ import 'leaflet/dist/leaflet.css';
 import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
 import { pixelRadius } from '@/utils/grids/convertToMeters';
 import getCounties, { getBlocks } from '@/utils/api'
+import { initialize } from 'next/dist/server/lib/render-server';
 
 export default function Map() {
 
@@ -19,7 +20,8 @@ export default function Map() {
     const [heatPoints, setHeatPoints] = useState<HeatLatLngTuple[]>([]);
     const [loading, setLoading] = useState<Boolean>(true);
 
-    const startingZoom = 5;
+    var currentZoom = mapRef.current?.getZoom() || 5;
+
     const maxZoom = 15;
     const targetRadius = 30;
 
@@ -67,7 +69,7 @@ export default function Map() {
 
         const map = L.map(containerRef.current, {
             center: startingCenter,
-            zoom: startingZoom,
+            zoom: currentZoom,
             layers: [osm],
         });
 
@@ -90,20 +92,12 @@ export default function Map() {
             Heat: heat,
         }).addTo(map);
 
-        var currentZoom = map.getZoom();
         var dataLevel = 'counties'
 
         map.on('zoomend', (event: L.LeafletEvent) => {
-            let multiplier = 1
-            if(map.getZoom() < currentZoom){
-                multiplier = 2
-            }else{
-                multiplier = 1/2
-            }
-
-            heat.setOptions({ radius: pixelRadius(targetRadius, map) * multiplier})
-
+            heat.setOptions({ radius: pixelRadius(targetRadius, map)})
             heat.redraw()
+
             currentZoom = map.getZoom()
             console.log(currentZoom)
 
@@ -123,9 +117,17 @@ export default function Map() {
 
             }else if(currentZoom < 14 && dataLevel === 'blocks'){
                 console.log("switch to counties")
-                dataLevel = 'counties';
+                dataLevel = 'counties';   
 
-                
+                const countyPoints = async () =>{
+                    const points = await getCounties();
+                    const relevantPointValues:HeatLatLngTuple[] = points.map((pt:any)=>{
+                        return [pt.lat || 0, pt.long || 0, (pt.median_gross_rent || 1)/(pt.median_home_value || 1)]
+                    })
+                    console.log('points: ',points, '\n', 'relevantPointValues', relevantPointValues)
+                    setHeatPoints(relevantPointValues);
+                }
+                countyPoints()
             }
         })
         
