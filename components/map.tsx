@@ -36,8 +36,10 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
     // Generate the grid
     useEffect(() => {
         const fetchData = async ()=> {
-            const points1 = await getCounties();
-            const points = points1
+            
+            const points= await getCounties();
+
+            pointsRef.current = points;
             const relevantPointValues:HeatLatLngTuple[] = points.map((pt:any)=>{
                 return [pt.lat || 0, pt.long || 0, (pt.median_gross_rent || 1)/(pt.median_home_value || 1)]
             })
