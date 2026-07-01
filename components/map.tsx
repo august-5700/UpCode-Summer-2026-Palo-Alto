@@ -25,6 +25,7 @@ export default function Map({ onSelectCoords }: MapProps) {
     const [loading, setLoading] = useState<Boolean>(true);
 
     var currentZoom = mapRef.current?.getZoom() || 5;
+    var dataLevel = currentZoom 
 
     const maxZoom = 15;
     const targetRadius = 30;
@@ -100,8 +101,6 @@ export default function Map({ onSelectCoords }: MapProps) {
             HOT: osmHOT,
             Heat: heat,
         }).addTo(map);
-
-        var dataLevel = 'counties'
 
         map.on('zoomend', (event: L.LeafletEvent) => {
             heat.setOptions({ radius: pixelRadius(targetRadius, map)})
