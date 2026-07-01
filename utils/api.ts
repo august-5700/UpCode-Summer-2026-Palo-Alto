@@ -39,6 +39,49 @@ export async function getBlocks() {
   return data;
 }
 
+/**
+ * HeatMap Score (0–10)
+ * -Gross rental yield  (annual rent ÷ home value) — cash flow   [60%]
+ * -Occupancy rate      (occupied ÷ total units) — demand      [40%]
+ */
+function computeHeatScore(
+  medianHomeValue: number | string | null | undefined,
+  medianGrossRent: number | string | null | undefined,
+  totalHousingUnits: number | string | null | undefined,
+  occupiedUnits: number | string | null | undefined
+): number {
+  const clean = (v: unknown): number | null => {
+    if (v === null || v === undefined || v === "") return null;
+    const n = Number(v);
+    return Number.isFinite(n) && n >= 0 ? n : null;
+  };
+  const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
+
+  const home = clean(medianHomeValue);
+  const rent = clean(medianGrossRent);
+  const total = clean(totalHousingUnits);
+  const occupied = clean(occupiedUnits);
+
+  const parts: { value: number; weight: number }[] = [];
+
+  // 1) Gross rental yield → 0..10 (8% annual gross yield = a 10)
+  if (home && rent) {
+    const yieldPct = ((rent * 12) / home) * 100;
+    parts.push({ value: clamp((yieldPct / 8) * 10, 0, 10), weight: 0.6 });
+  }
+
+  // 2) Occupancy → 0..10 (70% occupancy = 0, 98%+ = 10)
+  if (total && occupied != null) {
+    const occ = occupied / total;
+    parts.push({ value: clamp(((occ - 0.7) / (0.98 - 0.7)) * 10, 0, 10), weight: 0.4 });
+  }
+
+  if (parts.length === 0) return 0;
+  const w = parts.reduce((s, p) => s + p.weight, 0);
+  return Number((parts.reduce((s, p) => s + p.value * p.weight, 0) / w).toFixed(1));
+}
+
+
 // ---- Sidebar data --~~~:::::::
 
 export type Metric = {
@@ -121,11 +164,15 @@ export async function getTractByCoords(
 
   const vacancyRate = totalUnits ? ((vacant ?? 0) / totalUnits) * 100 : null;
   const priceToRent = homeValue && rent ? homeValue / (rent * 12) : null;
-
-  // Placeholder score: gross rent yield , 0–10
-  // TODO: Heatmap score!!
-  const yieldPct = homeValue && rent ? (rent * 12 / homeValue) * 100 : 0;
-  const score = Math.max(0, Math.min(10, Number(yieldPct.toFixed(1))));
+  
+  //HEAT SCORE CALCULATION
+  const score = computeHeatScore(
+    block.median_home_value,
+    block.median_gross_rent,
+    block.total_housing_units,
+    block.occupied_units
+  );
+  
 
   return {
     title: `${county?.name ?? "Unknown County"} · Tract ${block.tract_code}`,
@@ -139,4 +186,25 @@ export async function getTractByCoords(
       { label: "Price-to-Rent", value: priceToRent != null ? `${priceToRent.toFixed(1)}×` : "N/A", icon: "building" },
     ],
   };
+}
+
+export async function getBlocksWithinRange(map: L.Map) {
+
+  const bounds = map.getBounds();
+  const lowest = bounds.getSouth();
+  const highest = bounds.getNorth();
+  const leftmost = bounds.getWest();
+  const rightmost = bounds.getEast();
+
+  const { data, error } = await supabase
+  .from("blocks")
+  .select("* WHERE lat >= $(lowest) AND lat <= $(highest) AND long >= $(leftmost) AND long <= $(rightmost) LIMIT 5000");
+
+  if (error) {
+  console.error("Error fetching blocks:", error);
+  return [];
+  }
+  console.log("block range was called")
+  console.log(data)
+  return data;
 }

@@ -8,8 +8,8 @@ import 'leaflet/dist/leaflet.css';
 
 
 // import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
-import { pixelRadius } from '@/utils/grids/convertToMeters';
-import getCounties, { getBlocks } from '@/utils/api'
+import { pixelRadius } from '@/utils/convertToMeters';
+import getCounties, { getBlocks, getBlocksWithinRange} from '@/utils/api'
 //for selecting coordinates
 interface MapProps {
     onSelectCoords: (lat: number, lng: number) => void;
@@ -25,7 +25,7 @@ export default function Map({ onSelectCoords }: MapProps) {
     const [loading, setLoading] = useState<Boolean>(true);
 
     var currentZoom = mapRef.current?.getZoom() || 5;
-    var dataLevel = currentZoom 
+    var dataLevel = currentZoom >= 11 ? 'blocks' : 'counties';
 
     const maxZoom = 15;
     const targetRadius = 30;
@@ -33,8 +33,8 @@ export default function Map({ onSelectCoords }: MapProps) {
     // Generate the grid
     useEffect(() => {
         const fetchData = async ()=> {
-            const points1 = await getBlocks();
-            const points = points1.slice(1,3000);
+            const points1 = await getCounties();
+            const points = points1;
             const relevantPointValues:HeatLatLngTuple[] = points.map((pt:any)=>{
                 return [pt.lat || 0, pt.long || 0, (pt.median_gross_rent || 1)/(pt.median_home_value || 1)]
             })
@@ -69,9 +69,9 @@ export default function Map({ onSelectCoords }: MapProps) {
             }
         );
 
-        const startingCenter: LatLngTuple = [
-            40, -100
-        ];
+
+        const startingCenter: LatLngTuple = [40, -100];
+        console.log(mapRef.current)
 
         const map = L.map(containerRef.current, {
             center: startingCenter,
@@ -102,42 +102,49 @@ export default function Map({ onSelectCoords }: MapProps) {
             Heat: heat,
         }).addTo(map);
 
-        map.on('zoomend', (event: L.LeafletEvent) => {
-            heat.setOptions({ radius: pixelRadius(targetRadius, map)})
-            heat.redraw()
+        map.on('zoomend', async () =>{
+            // heat.setOptions({ radius: pixelRadius(targetRadius, map)})
+            // heat.redraw()
 
             currentZoom = map.getZoom()
             console.log(currentZoom)
+            console.log(dataLevel)
 
-            if(currentZoom >= 14 && dataLevel === 'counties'){
+            if(currentZoom >= 11 && dataLevel === 'counties'){
                 console.log("switch to blocks");
-                dataLevel = 'blocks';
 
-                const blockPoints = async () =>{
-                    const points = await getBlocks();
-                    const relevantPointValues:HeatLatLngTuple[] = points.map((pt:any)=>{
-                        return [pt.lat || 0, pt.long || 0, (pt.median_gross_rent || 1)/(pt.median_home_value || 1)]
-                    })
-                    console.log('points: ',points, '\n', 'relevantPointValues', relevantPointValues)
-                    setHeatPoints(relevantPointValues);
-                }
-                blockPoints()
+                const points = await getBlocksWithinRange(map);
 
-            }else if(currentZoom < 14 && dataLevel === 'blocks'){
+                const relevantPointValues:HeatLatLngTuple[] = points.map((pt:any)=>{
+                    return [pt.lat || 0, pt.long || 0, (pt.median_gross_rent || 1)/(pt.median_home_value || 1)]
+                })
+                console.log('points: ',points, '\n', 'relevantPointValues', relevantPointValues)
+                setHeatPoints(relevantPointValues);
+
+            } else if(currentZoom < 11 && dataLevel === 'blocks'){
                 console.log("switch to counties")
-                dataLevel = 'counties';   
 
                 const countyPoints = async () =>{
                     const points = await getCounties();
                     const relevantPointValues:HeatLatLngTuple[] = points.map((pt:any)=>{
                         return [pt.lat || 0, pt.long || 0, (pt.median_gross_rent || 1)/(pt.median_home_value || 1)]
                     })
-                    console.log('points: ',points, '\n', 'relevantPointValues', relevantPointValues)
+                    // console.log('points: ',points, '\n', 'relevantPointValues', relevantPointValues)
                     setHeatPoints(relevantPointValues);
                 }
                 countyPoints()
             }
         })
+
+        map.on("drag", async () => {
+            const points = await getBlocksWithinRange(map);
+            const relevantPointValues:HeatLatLngTuple[] = points.map((pt:any)=>{
+                return [pt.lat || 0, pt.long || 0, (pt.median_gross_rent || 1)/(pt.median_home_value || 1)]
+            })
+            console.log('points: ',points, '\n', 'relevantPointValues', relevantPointValues)
+            setHeatPoints(relevantPointValues);
+            var moved = true;
+        });
         
         setLoading(false)
         return () => {
