@@ -8,7 +8,7 @@ import 'leaflet/dist/leaflet.css';
 
 
 // import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
-import { pixelRadius } from '@/utils/grids/convertToMeters';
+import { pixelRadius } from '@/utils/convertToMeters';
 import getCounties, { getBlocks } from '@/utils/api'
 //for selecting coordinates
 interface MapProps {
