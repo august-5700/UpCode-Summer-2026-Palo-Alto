@@ -22,8 +22,15 @@ export function Search() {
     // figure out how to change the arrow thingy. id suggest digging around in the combobox file for an icon and just deleting it but if you have another idea thats fine
   return (
     <Combobox items={menu}>
-        <ComboboxInput placeholder="Search..."  className='absolute top-4 left-6 z-1000 bg-white/10 backdrop-blur-lg text-black
-    placeholder-black'/>
+        <ComboboxInput placeholder="Search..."  
+        className='absolute top-4 
+        left-6 z-1000 
+        bg-white/10 
+        backdrop-blur-lg 
+        text-black 
+        placeholder-black'
+    />
+    
       <ComboboxContent className='z-100 bg-white/10 backdrop-blur-lg text-black'>
         <ComboboxEmpty className='z-100 bg-white/10 backdrop-blur-lg text-black'>No items found.</ComboboxEmpty>
         <ComboboxList className='z-1000 bg-white/10 backdrop-blur-lg text-black'>
