@@ -2,7 +2,7 @@
  * HeatMap Score, 0-10, from the data we have.
  * gross rental yield (annual rent / home value), weighted 60%
  * occupancy rate (occupied / total units), weighted 40%
- * returns null when there isn't enough data (missing home value or rent)
+ * and it returns null when there isn't enough data (missing home value or rent)
  */
 export function computeHeatScore(
   medianHomeValue: number | string | null | undefined,
