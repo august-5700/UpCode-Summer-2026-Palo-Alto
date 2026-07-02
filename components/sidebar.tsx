@@ -9,7 +9,7 @@ const ICONS = { home: Home, dollar: DollarSign, building: Building2 } as const;
 
 export default function Sidebar({ data, onClose }: { data: TractData; onClose: () => void }) {
   return (
-    <Card className="absolute right-0 top-0 z-[1000] flex h-screen w-[420px] flex-col gap-6 overflow-y-auto rounded-l-3xl border-0 bg-white/95 p-8 shadow-2xl backdrop-blur">
+    <Card className="absolute right-4 top-4 bottom-4 z-[1000] flex w-[420px] flex-col gap-6 overflow-y-auto rounded-3xl border border-white/40 bg-white/50 p-8 shadow-2xl backdrop-blur-2xl backdrop-saturate-150">
       {/* Header */}
       <div className="flex items-start justify-between">
         <h2 className="text-2xl font-bold tracking-tight text-gray-900">{data.title}</h2>
@@ -28,10 +28,14 @@ export default function Sidebar({ data, onClose }: { data: TractData; onClose: (
         <p className="self-start text-xs font-semibold uppercase tracking-wider text-gray-500">
           HeatMap Score
         </p>
-        <p className="mt-1 flex items-baseline gap-1 font-extrabold leading-none text-green-600">
-          <span className="text-8xl">{data.score.toFixed(1)}</span>
-          <span className="text-2xl text-gray-300">/10</span>
-        </p>
+        {data.score == null ? (
+          <p className="mt-1 text-7xl font-extrabold leading-none text-gray-300">N/A</p>
+        ) : (
+          <p className="mt-1 flex items-baseline gap-1 font-extrabold leading-none text-green-600">
+            <span className="text-8xl">{data.score.toFixed(1)}</span>
+            <span className="text-2xl text-gray-300">/10</span>
+          </p>
+        )}
 
         {/* Percentiles (only when available) */}
         {data.regional != null && data.national != null && (
@@ -47,12 +51,19 @@ export default function Sidebar({ data, onClose }: { data: TractData; onClose: (
           </div>
         )}
 
-        {/* Gradient score bar with marker */}
-        <div className="relative mt-2 h-2.5 w-full rounded-full bg-[linear-gradient(to_right,#ef4444,#f59e0b,#eab308,#22c55e,#3b82f6)]">
-          <div
-            className="absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-white shadow-md ring-1 ring-black/10"
-            style={{ left: `${data.score * 10}%` }}
-          />
+        {/* progress bar filled up to the score */}
+        <div className="relative mt-2 h-3 w-full overflow-hidden rounded-full bg-gray-200">
+          {data.score != null && data.score > 0 && (
+            <div
+              className="absolute inset-y-0 left-0 overflow-hidden rounded-full"
+              style={{ width: `${data.score * 10}%` }}
+            >
+              <div
+                className="h-full bg-[linear-gradient(to_right,#ef4444,#f59e0b,#eab308,#22c55e,#3b82f6)]"
+                style={{ width: `${1000 / data.score}%` }}
+              />
+            </div>
+          )}
         </div>
       </section>
 

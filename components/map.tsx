@@ -10,6 +10,11 @@ import { heatRadiusForZoom } from '@/utils/heatRadius';
 import { pixelRadius } from '@/utils/convertToMeters';
 import getCounties, { getBlocks, getBlocksWithinRange} from '@/utils/api'
 import { combinePoints } from '@/utils/combinePoints';
+//for selecting coordinates
+interface MapProps {
+    onSelectCoords: (lat: number, lng: number, level: 'county' | 'block') => void;
+    onHover: (block: any | null, x: number, y: number) => void;
+}
 import { initialize } from 'next/dist/server/lib/render-server';
 import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
 import { attachData, attachWeightedData } from '@/utils/attachData';
@@ -18,7 +23,7 @@ import { request } from 'node:http';
 
 //for selecting coordinates
 interface MapProps {
-    onSelectCoords: (lat: number, lng: number) => void;
+    onSelectCoords: (lat: number, lng: number, level: 'county' | 'block') => void;
     onHover: (block: any | null, x: number, y: number) => void;
 }
 
@@ -138,7 +143,8 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
         
         // Listener for when user clicks, grabs user's latitude and longitude
         map.on("click", (e: L.LeafletMouseEvent) => {
-            onSelectCoords(e.latlng.lat, e.latlng.lng);
+            const level = map.getZoom() >= 11 ? 'block' : 'county';
+            onSelectCoords(e.latlng.lat, e.latlng.lng, level);
         });
 
         // Listener for when user moves mouse, grabs user's latitude and longitude and finds nearest point

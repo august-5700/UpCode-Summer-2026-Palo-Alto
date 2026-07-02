@@ -49,7 +49,7 @@ export function computeHeatScore(
   medianGrossRent: number | string | null | undefined,
   totalHousingUnits: number | string | null | undefined,
   occupiedUnits: number | string | null | undefined
-): number {
+): number | null {
   const clean = (v: unknown): number | null => {
     if (v === null || v === undefined || v === "") return null;
     const n = Number(v);
@@ -62,21 +62,21 @@ export function computeHeatScore(
   const total = clean(totalHousingUnits);
   const occupied = clean(occupiedUnits);
 
+  // Not enough data for a meaningful score, so caller shows N/A
+  if (!home || !rent) return null;
+
   const parts: { value: number; weight: number }[] = [];
 
-  // 1) Gross rental yield → 0..10 (8% annual gross yield = a 10)
-  if (home && rent) {
-    const yieldPct = ((rent * 12) / home) * 100;
-    parts.push({ value: clamp((yieldPct / 8) * 10, 0, 10), weight: 0.6 });
-  }
+  // 1) Gross rental yield 0..10 (8% annual gross yield = a 10)
+  const yieldPct = ((rent * 12) / home) * 100;
+  parts.push({ value: clamp((yieldPct / 8) * 10, 0, 10), weight: 0.6 });
 
-  // 2) Occupancy → 0..10 (70% occupancy = 0, 98%+ = 10)
+  // 2) Occupancy 0..10 (70% occupancy = 0, 98%+ = 10)
   if (total && occupied != null) {
     const occ = occupied / total;
     parts.push({ value: clamp(((occ - 0.7) / (0.98 - 0.7)) * 10, 0, 10), weight: 0.4 });
   }
 
-  if (parts.length === 0) return 0;
   const w = parts.reduce((s, p) => s + p.weight, 0);
   return Number((parts.reduce((s, p) => s + p.value * p.weight, 0) / w).toFixed(1));
 }
@@ -93,7 +93,7 @@ export type Metric = {
 
 export type TractData = {
   title: string;
-  score: number;
+  score: number | null;
   regional: number | null;
   national: number | null;
   metrics: Metric[];
@@ -188,6 +188,71 @@ export async function getTractByCoords(
   };
 }
 
+export async function getCountyByCoords(
+  lat: number,
+  lng: number
+): Promise<TractData | null> {
+  let counties: any[] = [];
+  for (const d of [1, 3, 6]) {
+    const { data, error } = await supabase
+      .from("counties")
+      .select("*")
+      .gte("lat", lat - d)
+      .lte("lat", lat + d)
+      .gte("long", lng - d)
+      .lte("long", lng + d)
+      .limit(4000);
+    if (error) {
+      console.error(error);
+      return null;
+    }
+    if (data && data.length) {
+      counties = data;
+      break;
+    }
+  }
+  if (!counties.length) return null;
+
+  let county = counties[0];
+  let best = Infinity;
+  for (const c of counties) {
+    const dist = (c.lat - lat) ** 2 + (c.long - lng) ** 2;
+    if (dist < best) {
+      best = dist;
+      county = c;
+    }
+  }
+
+  const homeValue = num(county.median_home_value);
+  const homeMoe = num(county.median_home_value_moe);
+  const rent = num(county.median_gross_rent);
+  const totalUnits = num(county.total_housing_units);
+  const vacant = num(county.vacant_units);
+
+  const vacancyRate = totalUnits ? ((vacant ?? 0) / totalUnits) * 100 : null;
+  const priceToRent = homeValue && rent ? homeValue / (rent * 12) : null;
+
+  const score = computeHeatScore(
+    county.median_home_value,
+    county.median_gross_rent,
+    county.total_housing_units,
+    county.occupied_units
+  );
+
+  return {
+    title: `${county.name} County`,
+    score,
+    regional: null,
+    national: null,
+    metrics: [
+      { label: "Median Home Value", value: money(homeValue), sub: homeMoe ? `±${money(homeMoe)}` : "", icon: "home" },
+      { label: "Median Gross Rent", value: rent ? `${money(rent)}/mo` : "N/A", icon: "dollar" },
+      { label: "Vacancy Rate", value: vacancyRate != null ? `${vacancyRate.toFixed(1)}%` : "N/A", icon: "building" },
+      { label: "Price-to-Rent", value: priceToRent != null ? `${priceToRent.toFixed(1)}×` : "N/A", icon: "building" },
+    ],
+  };
+}
+
 export async function getBlocksWithinRange(map: L.Map) {
 
   const bounds = map.getBounds();
@@ -207,4 +272,40 @@ export async function getBlocksWithinRange(map: L.Map) {
   console.log("block range was called")
   console.log(data)
   return data;
+}
+
+
+
+
+
+
+
+import { LatLngTuple } from "leaflet";
+
+var requestOptions = {
+  method: 'GET',
+};
+
+export async function getResultFromAddressAutocomplete(input: String, bias: LatLngTuple | null) {
+  if (input) {
+    const limit = 5
+    let res = null
+    console.log(typeof window)
+    console.log(process.env.NEXT_PUBLIC_ADDRESS_AUTOCOMPLETE_API_KEY)
+    if (bias) {
+      res = await fetch(`https://api.geoapify.com/v1/geocode/autocomplete?text=${input}&limit=${limit}&filter=countrycode%3Aus&bias=proximity%3A${bias[0]}%2C${bias[1]}&apiKey=${process.env.NEXT_PUBLIC_ADDRESS_AUTOCOMPLETE_API_KEY}`, requestOptions)
+    } else {
+      res = await fetch(`https://api.geoapify.com/v1/geocode/autocomplete?text=${input}&limit=${limit}&filter=countrycode%3Aus&apiKey=${process.env.NEXT_PUBLIC_ADDRESS_AUTOCOMPLETE_API_KEY}`, requestOptions)
+    }
+  
+    
+    if (!res.ok) {
+      throw new Error("Response failed with status " + res.status);
+    }
+    const json = res.json()
+    // console.log(json)
+    return json
+  } else {
+    return {}
+  }
 }
