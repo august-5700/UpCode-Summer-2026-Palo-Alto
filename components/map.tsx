@@ -1,7 +1,7 @@
 'use client';
 
 import { use, useEffect, useRef, useState } from 'react';
-import L, { LatLngTuple, HeatLatLngTuple } from 'leaflet';
+import L, { LatLngTuple, HeatLatLngTuple, Map as MapType } from 'leaflet';
 import 'leaflet.heat';
 
 import 'leaflet/dist/leaflet.css';
@@ -30,13 +30,14 @@ interface MapProps {
 const maxZoom = 15;
 const blockThreshold = 11;
 const subDivisions = 70
+const multiplier = 100000;
 
 // How to convert points to heatmap tuples
-const toHeatTuples = (points: any[]): HeatLatLngTuple[] =>
+const toHeatTuples = (points: any[], map: MapType): HeatLatLngTuple[] =>
     points.map((pt:any) => [
         pt.lat || 0,
         pt.long || 0,
-        (pt.median_gross_rent || 1)/(pt.median_home_value || 1)
+        (pt.median_gross_rent || 0)/(pt.median_home_value || 1) * (multiplier/map.getZoom())
     ]);
 
 
@@ -115,7 +116,7 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
             pointsRef.current = raw;
 
             // Sorts raw data
-            const sorted = toHeatTuples(raw).sort((a, b) => a[0] - b[0]);
+            const sorted = toHeatTuples(raw, map).sort((a, b) => a[0] - b[0]);
             
 
             // Finding the space between grid points

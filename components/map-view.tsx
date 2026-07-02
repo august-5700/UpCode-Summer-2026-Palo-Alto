@@ -67,10 +67,13 @@ export default function MapView() {
 
   return (
     <>
-      <Map onSelectCoords={handleSelect} onHover={handleHover} />
+      <Map 
+        onSelectCoords={(lat, lng, level) => handleSelect(lat, lng, level)}
+        onHover={handleHover} 
+      />
       {tract && <Sidebar data={tract} onClose={() => setTract(null)} />}
       {hover && <MapTooltip block={hover.block} x={hover.x} y={hover.y} countyName={hover.countyName} />}
-      <Search />
+      <Search handleSubmit={(lat, lng) => handleSelect(lat, lng, 'county')}/>
     </>
   );
 }
