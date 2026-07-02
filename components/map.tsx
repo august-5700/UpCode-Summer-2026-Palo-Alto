@@ -12,7 +12,7 @@ import getCounties, { getBlocks, getBlocksWithinRange} from '@/utils/api'
 import { combinePoints } from '@/utils/combinePoints';
 //for selecting coordinates
 interface MapProps {
-    onSelectCoords: (lat: number, lng: number) => void;
+    onSelectCoords: (lat: number, lng: number, level: 'county' | 'block') => void;
     onHover: (block: any | null, x: number, y: number) => void;
 }
 import { initialize } from 'next/dist/server/lib/render-server';
@@ -105,7 +105,8 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
         mapRef.current = map;
         // Add click event listener to map for selecting coordinates
         map.on("click", (e: L.LeafletMouseEvent) => {
-            onSelectCoords(e.latlng.lat, e.latlng.lng);
+            const level = map.getZoom() >= 11 ? 'block' : 'county';
+            onSelectCoords(e.latlng.lat, e.latlng.lng, level);
         });
         //ON HOVER STUFF
         let rafPending = false;
@@ -151,6 +152,7 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
                 console.log("switch to blocks");
 
                 const points = await getBlocksWithinRange(map);
+                pointsRef.current = points; // hover reads the active level
 
                 const relevantPointValues:HeatLatLngTuple[] = points.map((pt:any)=>{
                     return [pt.lat || 0, pt.long || 0, (pt.median_gross_rent || 1)/(pt.median_home_value || 1)]
@@ -161,15 +163,13 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
             } else if(currentZoom < 11){
                 console.log("switch to counties")
 
-                const countyPoints = async () =>{
-                    const points = await getCounties();
-                    const relevantPointValues:HeatLatLngTuple[] = points.map((pt:any)=>{
-                        return [pt.lat || 0, pt.long || 0, (pt.median_gross_rent || 1)/(pt.median_home_value || 1)]
-                    })
-                    console.log('points: ',points, '\n', 'relevantPointValues', relevantPointValues)
-                    return relevantPointValues.sort((a, b) => a[0] - b[0]);
-                }
-                sortedData = await countyPoints()
+                const points = await getCounties();
+                pointsRef.current = points; // hover reads the active level
+                const relevantPointValues:HeatLatLngTuple[] = points.map((pt:any)=>{
+                    return [pt.lat || 0, pt.long || 0, (pt.median_gross_rent || 1)/(pt.median_home_value || 1)]
+                })
+                console.log('points: ',points, '\n', 'relevantPointValues', relevantPointValues)
+                sortedData = relevantPointValues.sort((a, b) => a[0] - b[0]);
             }
             
             const subDivisions = 20
@@ -200,7 +200,9 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
         })
 
         map.on("drag", async () => {
+            if (map.getZoom() < 11) return; // counties are global, no need to reload on drag
             const points = await getBlocksWithinRange(map);
+            pointsRef.current = points; // keep hover in sync while panning
             const relevantPointValues:HeatLatLngTuple[] = points.map((pt:any)=>{
                 return [pt.lat || 0, pt.long || 0, (pt.median_gross_rent || 1)/(pt.median_home_value || 1)]
             })

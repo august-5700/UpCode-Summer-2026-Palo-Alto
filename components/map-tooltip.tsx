@@ -12,7 +12,7 @@ const moe = (v: unknown) => {
   return Number.isFinite(n) && n > 0 ? `±$${Math.round(n).toLocaleString()}` : "";
 };
 
-export default function MapTooltip({ block, x, y }: { block: any; x: number; y: number }) {
+export default function MapTooltip({ block, x, y, countyName }: { block: any; x: number; y: number; countyName?: string | null }) {
   const home = Number(block.median_home_value);
   const rent = Number(block.median_gross_rent);
   const grossYield = home > 0 && rent > 0 ? ((rent * 12) / home) * 100 : null;
@@ -29,8 +29,11 @@ export default function MapTooltip({ block, x, y }: { block: any; x: number; y: 
       : score >= 4 ? "bg-amber-500 text-white"
       : "bg-red-500 text-white";
 
-  // county rows have no tract_code, fall back to the county name
-  const title = block.tract_code != null ? `Tract ${block.tract_code}` : block.name ?? "—";
+  // tract rows show county + tract, county rows show just the county name
+  const title =
+    block.tract_code != null
+      ? `${countyName ? `${countyName} · ` : ""}Tract ${block.tract_code}`
+      : `${block.name ?? "—"}${block.name ? " County" : ""}`;
 
   const rows = [
     {
