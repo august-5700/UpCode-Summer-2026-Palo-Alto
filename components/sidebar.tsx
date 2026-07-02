@@ -51,16 +51,18 @@ export default function Sidebar({ data, onClose }: { data: TractData; onClose: (
           </div>
         )}
 
-        {/* Progress bar: colored fill up to the score, gray track for the rest */}
+        {/* progress bar filled up to the score */}
         <div className="relative mt-2 h-3 w-full overflow-hidden rounded-full bg-gray-200">
-          {data.score != null && (
-            <>
-              <div className="absolute inset-0 bg-[linear-gradient(to_right,#ef4444,#f59e0b,#eab308,#22c55e,#3b82f6)]" />
+          {data.score != null && data.score > 0 && (
+            <div
+              className="absolute inset-y-0 left-0 overflow-hidden rounded-full"
+              style={{ width: `${data.score * 10}%` }}
+            >
               <div
-                className="absolute inset-y-0 right-0 bg-gray-200"
-                style={{ left: `${data.score * 10}%` }}
+                className="h-full bg-[linear-gradient(to_right,#ef4444,#f59e0b,#eab308,#22c55e,#3b82f6)]"
+                style={{ width: `${1000 / data.score}%` }}
               />
-            </>
+            </div>
           )}
         </div>
       </section>

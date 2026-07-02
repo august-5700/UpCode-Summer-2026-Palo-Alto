@@ -29,6 +29,9 @@ export default function MapTooltip({ block, x, y }: { block: any; x: number; y: 
       : score >= 4 ? "bg-amber-500 text-white"
       : "bg-red-500 text-white";
 
+  // county rows have no tract_code, fall back to the county name
+  const title = block.tract_code != null ? `Tract ${block.tract_code}` : block.name ?? "—";
+
   const rows = [
     {
       icon: Home,
@@ -59,7 +62,7 @@ export default function MapTooltip({ block, x, y }: { block: any; x: number; y: 
       style={{ left: x + 16, top: y + 16 }}
     >
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-lg font-bold tracking-tight text-gray-900">Tract {block.tract_code ?? "—"}</h3>
+        <h3 className="text-lg font-bold tracking-tight text-gray-900">{title}</h3>
         <span className={`rounded-full px-2.5 py-0.5 text-sm font-bold ${badge}`}>
           {score == null ? "N/A" : score.toFixed(1)}
         </span>
