@@ -17,7 +17,7 @@ interface MapProps {
 }
 import { initialize } from 'next/dist/server/lib/render-server';
 import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
-import { attachData, attachWeightedData } from '@/utils/attachData';
+import { attachData, attachWeightedData } from '@/utils/attachDataFast';
 import { on } from 'node:cluster';
 import { request } from 'node:http';
 
@@ -116,7 +116,7 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
             pointsRef.current = raw;
 
             // Sorts raw data
-            const sorted = toHeatTuples(raw, map).sort((a, b) => a[0] - b[0]);
+            const sorted = toHeatTuples(raw, map); // Removed the sort since the new method does not require it.
             
 
             // Finding the space between grid points
