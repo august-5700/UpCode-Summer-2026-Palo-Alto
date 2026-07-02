@@ -208,3 +208,39 @@ export async function getBlocksWithinRange(map: L.Map) {
   console.log(data)
   return data;
 }
+
+
+
+
+
+
+
+import { LatLngTuple } from "leaflet";
+
+var requestOptions = {
+  method: 'GET',
+};
+
+export async function getResultFromAddressAutocomplete(input: String, bias: LatLngTuple | null) {
+  if (input) {
+    const limit = 5
+    let res = null
+    console.log(typeof window)
+    console.log(process.env.NEXT_PUBLIC_ADDRESS_AUTOCOMPLETE_API_KEY)
+    if (bias) {
+      res = await fetch(`https://api.geoapify.com/v1/geocode/autocomplete?text=${input}&limit=${limit}&filter=countrycode%3Aus&bias=proximity%3A${bias[0]}%2C${bias[1]}&apiKey=${process.env.NEXT_PUBLIC_ADDRESS_AUTOCOMPLETE_API_KEY}`, requestOptions)
+    } else {
+      res = await fetch(`https://api.geoapify.com/v1/geocode/autocomplete?text=${input}&limit=${limit}&filter=countrycode%3Aus&apiKey=${process.env.NEXT_PUBLIC_ADDRESS_AUTOCOMPLETE_API_KEY}`, requestOptions)
+    }
+  
+    
+    if (!res.ok) {
+      throw new Error("Response failed with status " + res.status);
+    }
+    const json = res.json()
+    // console.log(json)
+    return json
+  } else {
+    return {}
+  }
+}
