@@ -1,7 +1,7 @@
 "use client";
 
 import { Home, DollarSign, TrendingUp } from "lucide-react";
-import { computeHeatScore } from "@/utils/api";
+import { computeHeatScore } from "@/utils/score";
 
 const money = (v: number) =>
   Number.isFinite(v) && v > 0 ? "$" + Math.round(v).toLocaleString() : "N/A";

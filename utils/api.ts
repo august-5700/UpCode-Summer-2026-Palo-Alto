@@ -7,6 +7,7 @@ export const fetchGeoDataForPoint = async (lat:number, lon:number) => {
 }
 
 import { createClient } from "@supabase/supabase-js";
+import { computeHeatScore } from "./score";
 
 const supabase = createClient(
   "https://vpcxcjmotpouxuiwjlpi.supabase.co",
@@ -39,47 +40,6 @@ export async function getBlocks() {
   return data;
 }
 
-/**
- * HeatMap Score (0–10)
- * -Gross rental yield  (annual rent ÷ home value) — cash flow   [60%]
- * -Occupancy rate      (occupied ÷ total units) — demand      [40%]
- */
-export function computeHeatScore(
-  medianHomeValue: number | string | null | undefined,
-  medianGrossRent: number | string | null | undefined,
-  totalHousingUnits: number | string | null | undefined,
-  occupiedUnits: number | string | null | undefined
-): number | null {
-  const clean = (v: unknown): number | null => {
-    if (v === null || v === undefined || v === "") return null;
-    const n = Number(v);
-    return Number.isFinite(n) && n >= 0 ? n : null;
-  };
-  const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
-
-  const home = clean(medianHomeValue);
-  const rent = clean(medianGrossRent);
-  const total = clean(totalHousingUnits);
-  const occupied = clean(occupiedUnits);
-
-  // Not enough data for a meaningful score, so caller shows N/A
-  if (!home || !rent) return null;
-
-  const parts: { value: number; weight: number }[] = [];
-
-  // 1) Gross rental yield 0..10 (8% annual gross yield = a 10)
-  const yieldPct = ((rent * 12) / home) * 100;
-  parts.push({ value: clamp((yieldPct / 8) * 10, 0, 10), weight: 0.6 });
-
-  // 2) Occupancy 0..10 (70% occupancy = 0, 98%+ = 10)
-  if (total && occupied != null) {
-    const occ = occupied / total;
-    parts.push({ value: clamp(((occ - 0.7) / (0.98 - 0.7)) * 10, 0, 10), weight: 0.4 });
-  }
-
-  const w = parts.reduce((s, p) => s + p.weight, 0);
-  return Number((parts.reduce((s, p) => s + p.value * p.weight, 0) / w).toFixed(1));
-}
 
 
 // ---- Sidebar data --~~~:::::::
