@@ -54,7 +54,10 @@ export function Search({handleSubmit}: SearchProps) {
         bg-white/10 
         backdrop-blur-lg 
         text-black 
-        placeholder-black'
+        placeholder-black
+        shadow-md
+        rounded-3xl
+        h-10'
         onChange={(e) => handleSearchChange(e.target.value)}
     />
     
