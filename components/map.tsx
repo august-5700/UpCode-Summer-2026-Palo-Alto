@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { use, useEffect, useRef, useState } from 'react';
 import L, { LatLngTuple, HeatLatLngTuple } from 'leaflet';
 import 'leaflet.heat';
 
@@ -10,104 +10,138 @@ import { heatRadiusForZoom } from '@/utils/heatRadius';
 import { pixelRadius } from '@/utils/convertToMeters';
 import getCounties, { getBlocks, getBlocksWithinRange} from '@/utils/api'
 import { combinePoints } from '@/utils/combinePoints';
+import { initialize } from 'next/dist/server/lib/render-server';
+import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
+import { attachData, attachWeightedData } from '@/utils/attachData';
+import { on } from 'node:cluster';
+import { request } from 'node:http';
+
 //for selecting coordinates
 interface MapProps {
     onSelectCoords: (lat: number, lng: number) => void;
     onHover: (block: any | null, x: number, y: number) => void;
 }
-import { initialize } from 'next/dist/server/lib/render-server';
-import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
-import { attachData, attachWeightedData } from '@/utils/attachData';
+
+const maxZoom = 15;
+const blockThreshold = 11;
+const subDivisions = 70
+
+// How to convert points to heatmap tuples
+const toHeatTuples = (points: any[]): HeatLatLngTuple[] =>
+    points.map((pt:any) => [
+        pt.lat || 0,
+        pt.long || 0,
+        (pt.median_gross_rent || 1)/(pt.median_home_value || 1)
+    ]);
+
 
 export default function Map({ onSelectCoords, onHover }: MapProps) {
-    const pointsRef = useRef<any[]>([]);
     const containerRef = useRef<HTMLDivElement>(null);
+    const pointsRef = useRef<any[]>([]);
     const mapRef = useRef<L.Map | null>(null);
+    const heatRef = useRef<any>(null);
+    const requestIdRef = useRef(0);
 
-    const [heatPoints, setHeatPoints] = useState<HeatLatLngTuple[]>([]);
-    var sortedData: HeatLatLngTuple[] = [];
-    const [loading, setLoading] = useState<Boolean>(true);
-
-    var currentZoom = mapRef.current?.getZoom() || 5;
-    let grid_spacing = 25000
-    var dataLevel = currentZoom >= 11 ? 'blocks' : 'counties';
-
-    const maxZoom = 15;
-    const targetRadius = 30;
-
-    // Generate the grid
+    const onSelectCoordsRef = useRef(onSelectCoords);
+    const onHoverRef = useRef(onHover);
     useEffect(() => {
-        const fetchData = async ()=> {
-            
-            const points= await getCounties();
+        onSelectCoordsRef.current = onSelectCoords;
+        onHoverRef.current = onHover;
+    }, [onSelectCoords, onHover]);
 
-            pointsRef.current = points;
-            const relevantPointValues:HeatLatLngTuple[] = points.map((pt:any)=>{
-                return [pt.lat || 0, pt.long || 0, (pt.median_gross_rent || 1)/(pt.median_home_value || 1)]
-            })
-            console.log('points: ',points, '\n', 'relevantPointValues', relevantPointValues)
-
-            const lats = relevantPointValues.map((p) => p[0]);
-            const lngs = relevantPointValues.map((p) => p[1]);
-            const bottomLeft: LatLngTuple = [Math.min(...lats), Math.min(...lngs)];
-            const topRight: LatLngTuple = [Math.max(...lats), Math.max(...lngs)];
-            sortedData = [...relevantPointValues].sort((a, b) => a[0] - b[0]);
-            const grid = generateTriangleGrid(
-                bottomLeft,
-                topRight,
-                grid_spacing, // spacing in equator-meters (Mercator units)
-            );
-            const withData = attachWeightedData(grid, sortedData);
-            const combinedDataPoints = combinePoints(withData)
-
-            console.log(combinedDataPoints);
-            setHeatPoints(combinedDataPoints);
-        }
-        fetchData()
-
-    }, []);
-
-    // Create the map after data is ready
+    const [loading, setLoading] = useState(true);
     useEffect(() => {
-        if (!containerRef.current) return;
-        if (mapRef.current) return;
-        // if (heatPoints.length === 0) return;
-        setLoading(true);
+        // Checking if we have a container and that there isn't already a map in place
+        if(!containerRef.current || mapRef.current) return;
 
-        const osm = L.tileLayer(
-            'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-            {
-                maxZoom,
+        // Setting the Open Street Map layer
+        const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+                maxZoom: maxZoom,
                 attribution: '© OpenStreetMap'
-            }
-        );
+        });
 
-        const osmHOT = L.tileLayer(
-            'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
-            {
-                maxZoom: 19,
-                attribution:
-                    '© OpenStreetMap contributors, Humanitarian OpenStreetMap Team',
-            }
-        );
-
-
-        const startingCenter: LatLngTuple = [40, -100];
-        console.log(mapRef.current)
-
+        // Setting the map and attaching the OSM layer
         const map = L.map(containerRef.current, {
-            center: startingCenter,
-            zoom: currentZoom,
+            center: [40, -100] as LatLngTuple,
+            zoom: 5,
             layers: [osm],
             zoomControl: false
         });
-
+        // Storing the map in the mapRef object
         mapRef.current = map;
-        // Add click event listener to map for selecting coordinates
+
+        // Creating the heat layer
+        const heat = (L as any).heatLayer([], {
+            radius: 25,
+            blur: 15,
+            gradient: {
+                0.4: 'blue',
+                0.65: 'lime',
+                0.995: 'orange',
+                1.0: 'red'
+            }
+        }).addTo(map);
+        heatRef.current = heat;
+
+        // Single refresh function, all changes happen here
+        // Calls when first initialized and when any movement happens, zoom/drag
+        const refresh = async () => {
+
+            // Creates request id for the called refresh function
+            // Different id for each refresh call
+            const requestId = ++requestIdRef.current;
+            
+            // Grabs zoom
+            const zoom = map.getZoom();
+
+            // If the zoom is past the threshold the raw data is grabbed from blocks dataset
+            // Otherwise its grabbed from counties dataset
+            const raw = 
+                zoom >= blockThreshold
+                    ? await getBlocksWithinRange(map)
+                    : await getCounties();
+
+            
+            // Checks if the requestId is current and that there is a map
+            if(requestId !== requestIdRef.current || !mapRef.current) return;
+
+
+            // Update pointsRef with the new raw data
+            pointsRef.current = raw;
+
+            // Sorts raw data
+            const sorted = toHeatTuples(raw).sort((a, b) => a[0] - b[0]);
+            
+
+            // Finding the space between grid points
+            const bounds = map.getBounds()
+            const gridSpacing = bounds.getSouthEast().distanceTo(bounds.getSouthWest())/subDivisions;
+
+
+            // Generating the grid
+            const grid = generateTriangleGrid([bounds.getSouth(),bounds.getWest()], [bounds.getNorth(), bounds.getEast()], gridSpacing);
+
+
+            // Taking sorted data and attaching to grid
+            const combined = combinePoints(attachWeightedData(grid, sorted));
+
+
+            // Updating the radius and blur
+            const r = heatRadiusForZoom(map, gridSpacing);
+            heatRef.current.setOptions({ radius: r, blur: r * 0.5 });
+
+            // Updating the grid of heat points
+            heat.setLatLngs(combined)
+
+            setLoading(false);
+        };
+        
+        // Listener for when user clicks, grabs user's latitude and longitude
         map.on("click", (e: L.LeafletMouseEvent) => {
             onSelectCoords(e.latlng.lat, e.latlng.lng);
         });
-        //ON HOVER STUFF
+
+        // Listener for when user moves mouse, grabs user's latitude and longitude and finds nearest point
         let rafPending = false;
         map.on("mousemove", (e: L.LeafletMouseEvent) => {
             const { lat, lng } = e.latlng;
@@ -127,97 +161,26 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
                 onHover(nearest, cx, cy);
             });
         });
+
+        // If the user's mouse ends up outside of the map, changes the point the user is hovering over to no point
         map.on("mouseout", () => onHover(null, 0, 0));
 
-        const heat = L.heatLayer(heatPoints, {
-            radius: heatRadiusForZoom(map, grid_spacing),
-            blur: heatRadiusForZoom(map, grid_spacing) * 0.5,
-            gradient: {
-                0.4: 'blue',
-                0.65: 'lime',
-                0.995: 'orange',
-                1.0: 'red'
-            }
+        // Checks if the user moves, zoom/drag, if so calls the refresh function
+        map.on('moveend', refresh);
 
-        }).addTo(map);
+        // After all the initializing is finished calls refresh
+        refresh();
 
-        var dataLevel = 'counties'
-
-        map.on('zoomend', async () => {
-            currentZoom = map.getZoom();
-            console.log(currentZoom)
-            console.log(dataLevel)
-            if(currentZoom >= 11){
-                console.log("switch to blocks");
-
-                const points = await getBlocksWithinRange(map);
-
-                const relevantPointValues:HeatLatLngTuple[] = points.map((pt:any)=>{
-                    return [pt.lat || 0, pt.long || 0, (pt.median_gross_rent || 1)/(pt.median_home_value || 1)]
-                })
-                console.log('points: ',points, '\n', 'relevantPointValues', relevantPointValues)
-                sortedData = relevantPointValues.sort((a, b) => a[0] - b[0]);
-
-            } else if(currentZoom < 11){
-                console.log("switch to counties")
-
-                const countyPoints = async () =>{
-                    const points = await getCounties();
-                    const relevantPointValues:HeatLatLngTuple[] = points.map((pt:any)=>{
-                        return [pt.lat || 0, pt.long || 0, (pt.median_gross_rent || 1)/(pt.median_home_value || 1)]
-                    })
-                    console.log('points: ',points, '\n', 'relevantPointValues', relevantPointValues)
-                    return relevantPointValues.sort((a, b) => a[0] - b[0]);
-                }
-                sortedData = await countyPoints()
-            }
-            
-            const subDivisions = 20
-            grid_spacing = map.getBounds().getSouthEast().distanceTo(map.getBounds().getSouthWest())/subDivisions;
-            console.log(grid_spacing)
-
-            const grid = generateTriangleGrid(
-                [map.getBounds().getSouth(),map.getBounds().getWest()], 
-                [map.getBounds().getNorth(), map.getBounds().getEast()], 
-                grid_spacing
-            );
-            // console.log(grid);
-            console.log("hihihihi")
-            console.log(sortedData);
-
-            const withData = attachWeightedData(grid, sortedData);
-            const combinedDataPoints = combinePoints(withData);
-
-            console.log(combinedDataPoints);
-            setHeatPoints(combinedDataPoints);
-
-
-            const r = 4
-            heat.setOptions({ radius: r, blur: r * 0.5 });
-            heat.setOptions({ radius: heatRadiusForZoom(map, grid_spacing) });
-
-            heat.redraw();
-        })
-
-        map.on("drag", async () => {
-            const points = await getBlocksWithinRange(map);
-            const relevantPointValues:HeatLatLngTuple[] = points.map((pt:any)=>{
-                return [pt.lat || 0, pt.long || 0, (pt.median_gross_rent || 1)/(pt.median_home_value || 1)]
-            })
-            console.log('points: ',points, '\n', 'relevantPointValues', relevantPointValues)
-            setHeatPoints(relevantPointValues);
-            var moved = true;
-        });
-        
-        setLoading(false)
+        // Cleanup function
         return () => {
+            requestIdRef.current++;
             map.remove();
             mapRef.current = null;
+            heatRef.current = null;
         };
+    }, []);
 
-    }, [heatPoints]);
-
-    return (
+return (
     <div className="relative w-screen h-screen">
 
         {loading && (
