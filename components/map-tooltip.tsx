@@ -58,7 +58,7 @@ export default function MapTooltip({ block, x, y }: { block: any; x: number; y: 
 
   return (
     <div
-      className="pointer-events-none fixed z-[1100] w-72 rounded-2xl border border-gray-100 bg-white/95 p-4 shadow-xl backdrop-blur"
+      className="pointer-events-none fixed z-[1100] w-72 rounded-2xl border border-white/40 bg-white/50 p-4 shadow-xl backdrop-blur-2xl backdrop-saturate-150"
       style={{ left: x + 16, top: y + 16 }}
     >
       <div className="mb-3 flex items-center justify-between">
