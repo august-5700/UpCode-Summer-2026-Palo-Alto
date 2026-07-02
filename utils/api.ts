@@ -49,7 +49,7 @@ export function computeHeatScore(
   medianGrossRent: number | string | null | undefined,
   totalHousingUnits: number | string | null | undefined,
   occupiedUnits: number | string | null | undefined
-): number {
+): number | null {
   const clean = (v: unknown): number | null => {
     if (v === null || v === undefined || v === "") return null;
     const n = Number(v);
@@ -62,21 +62,21 @@ export function computeHeatScore(
   const total = clean(totalHousingUnits);
   const occupied = clean(occupiedUnits);
 
+  // Not enough data for a meaningful score, so caller shows N/A
+  if (!home || !rent) return null;
+
   const parts: { value: number; weight: number }[] = [];
 
-  // 1) Gross rental yield → 0..10 (8% annual gross yield = a 10)
-  if (home && rent) {
-    const yieldPct = ((rent * 12) / home) * 100;
-    parts.push({ value: clamp((yieldPct / 8) * 10, 0, 10), weight: 0.6 });
-  }
+  // 1) Gross rental yield 0..10 (8% annual gross yield = a 10)
+  const yieldPct = ((rent * 12) / home) * 100;
+  parts.push({ value: clamp((yieldPct / 8) * 10, 0, 10), weight: 0.6 });
 
-  // 2) Occupancy → 0..10 (70% occupancy = 0, 98%+ = 10)
+  // 2) Occupancy 0..10 (70% occupancy = 0, 98%+ = 10)
   if (total && occupied != null) {
     const occ = occupied / total;
     parts.push({ value: clamp(((occ - 0.7) / (0.98 - 0.7)) * 10, 0, 10), weight: 0.4 });
   }
 
-  if (parts.length === 0) return 0;
   const w = parts.reduce((s, p) => s + p.weight, 0);
   return Number((parts.reduce((s, p) => s + p.value * p.weight, 0) / w).toFixed(1));
 }
@@ -93,7 +93,7 @@ export type Metric = {
 
 export type TractData = {
   title: string;
-  score: number;
+  score: number | null;
   regional: number | null;
   national: number | null;
   metrics: Metric[];
