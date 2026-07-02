@@ -188,6 +188,71 @@ export async function getTractByCoords(
   };
 }
 
+export async function getCountyByCoords(
+  lat: number,
+  lng: number
+): Promise<TractData | null> {
+  let counties: any[] = [];
+  for (const d of [1, 3, 6]) {
+    const { data, error } = await supabase
+      .from("counties")
+      .select("*")
+      .gte("lat", lat - d)
+      .lte("lat", lat + d)
+      .gte("long", lng - d)
+      .lte("long", lng + d)
+      .limit(4000);
+    if (error) {
+      console.error(error);
+      return null;
+    }
+    if (data && data.length) {
+      counties = data;
+      break;
+    }
+  }
+  if (!counties.length) return null;
+
+  let county = counties[0];
+  let best = Infinity;
+  for (const c of counties) {
+    const dist = (c.lat - lat) ** 2 + (c.long - lng) ** 2;
+    if (dist < best) {
+      best = dist;
+      county = c;
+    }
+  }
+
+  const homeValue = num(county.median_home_value);
+  const homeMoe = num(county.median_home_value_moe);
+  const rent = num(county.median_gross_rent);
+  const totalUnits = num(county.total_housing_units);
+  const vacant = num(county.vacant_units);
+
+  const vacancyRate = totalUnits ? ((vacant ?? 0) / totalUnits) * 100 : null;
+  const priceToRent = homeValue && rent ? homeValue / (rent * 12) : null;
+
+  const score = computeHeatScore(
+    county.median_home_value,
+    county.median_gross_rent,
+    county.total_housing_units,
+    county.occupied_units
+  );
+
+  return {
+    title: `${county.name} County`,
+    score,
+    regional: null,
+    national: null,
+    metrics: [
+      { label: "Median Home Value", value: money(homeValue), sub: homeMoe ? `±${money(homeMoe)}` : "", icon: "home" },
+      { label: "Median Gross Rent", value: rent ? `${money(rent)}/mo` : "N/A", icon: "dollar" },
+      { label: "Vacancy Rate", value: vacancyRate != null ? `${vacancyRate.toFixed(1)}%` : "N/A", icon: "building" },
+      { label: "Price-to-Rent", value: priceToRent != null ? `${priceToRent.toFixed(1)}×` : "N/A", icon: "building" },
+    ],
+  };
+}
+
 export async function getBlocksWithinRange(map: L.Map) {
 
   const bounds = map.getBounds();

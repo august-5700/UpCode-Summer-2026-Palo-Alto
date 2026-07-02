@@ -4,29 +4,38 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Map from "./map";
 import Sidebar from "./sidebar";
 import MapTooltip from "./map-tooltip";
-import { getTractByCoords, type TractData } from "@/utils/api";
+import getCounties, { getTractByCoords, getCountyByCoords, type TractData } from "@/utils/api";
 import { Search } from "./search";
 
-type Hover = { block: any; x: number; y: number } | null;
+type Hover = { block: any; x: number; y: number; countyName: string | null } | null;
 
 const HOVER_DELAY = 1000; // ms of stillness before the tooltip shows
-const MOVE_THRESHOLD = 10;  // px ... moves smaller than this then count as "still" (ignores jitter)
+const MOVE_THRESHOLD = 10; // px, moves smaller than this count as still (ignores jitter)
 
 export default function MapView() {
   const [tract, setTract] = useState<TractData | null>(null);
   const [hover, setHover] = useState<Hover>(null);
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const anchorRef = useRef<{ x: number; y: number } | null>(null); // where the current countdown started
-  const latestRef = useRef<Hover>(null);                            // most recent block+position under the cursor
+  const anchorRef = useRef<{ x: number; y: number } | null>(null);
+  const latestRef = useRef<Hover>(null);
+  const countyNamesRef = useRef<Record<string, string>>({}); // "state_fip-county_fip" -> name
 
-  const handleSelect = useCallback(async (lat: number, lng: number) => {
-    const data = await getTractByCoords(lat, lng);
+  // load county names once so tract-level hovers can show the county name
+  useEffect(() => {
+    getCounties().then((counties: any[]) => {
+      const lookup: Record<string, string> = {};
+      for (const c of counties) lookup[`${c.state_fip}-${c.county_fip}`] = c.name;
+      countyNamesRef.current = lookup;
+    });
+  }, []);
+
+  const handleSelect = useCallback(async (lat: number, lng: number, level: "county" | "block") => {
+    const data = level === "block" ? await getTractByCoords(lat, lng) : await getCountyByCoords(lat, lng);
     setTract(data);
   }, []);
 
   const handleHover = useCallback((block: any | null, x: number, y: number) => {
-    // Off the map then hide immediately
     if (!block) {
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = null;
@@ -36,19 +45,21 @@ export default function MapView() {
       return;
     }
 
-    // Always remember what's actually under the cursor right now
-    latestRef.current = { block, x, y };
+    // tract rows carry tract_code but no name, so resolve the county name for the title
+    const countyName =
+      block.tract_code != null
+        ? countyNamesRef.current[`${block.state_fip}-${block.county_fip}`] ?? null
+        : null;
 
-    // Ignore tiny jitter so the cursor can settle
+    latestRef.current = { block, x, y, countyName };
+
     const a = anchorRef.current;
     const moved = !a || Math.hypot(x - a.x, y - a.y) > MOVE_THRESHOLD;
     if (!moved) return;
 
-    //  hide re-anchor,.. restart the countdown
     anchorRef.current = { x, y };
     setHover(null);
     if (timerRef.current) clearTimeout(timerRef.current);
-    // Show whatever is CURRENT when it fires... not the stale block from schedule time
     timerRef.current = setTimeout(() => setHover(latestRef.current), HOVER_DELAY);
   }, []);
 
@@ -58,8 +69,8 @@ export default function MapView() {
     <>
       <Map onSelectCoords={handleSelect} onHover={handleHover} />
       {tract && <Sidebar data={tract} onClose={() => setTract(null)} />}
-      {hover && <MapTooltip block={hover.block} x={hover.x} y={hover.y} />}
-      <Search/>
+      {hover && <MapTooltip block={hover.block} x={hover.x} y={hover.y} countyName={hover.countyName} />}
+      <Search />
     </>
   );
 }
