@@ -105,8 +105,7 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
                 zoom >= blockThreshold
                     ? await getBlocksWithinRange(map)
                     : await getCounties();
-
-            
+                    
             // Checks if the requestId is current and that there is a map
             if(requestId !== requestIdRef.current || !mapRef.current) return;
 
