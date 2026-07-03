@@ -5,7 +5,7 @@ export const fetchGeoDataForPoint = async (lat:number, lon:number) => {
   }
   return res.json()
 }
-
+import { LatLngBounds } from "leaflet"
 import { createClient } from "@supabase/supabase-js";
 import { computeHeatScore } from "./score";
 
@@ -213,24 +213,21 @@ export async function getCountyByCoords(
   };
 }
 
-export async function getBlocksWithinRange(map: L.Map) {
-
-  const bounds = map.getBounds();
-  const lowest = bounds.getSouth();
-  const highest = bounds.getNorth();
-  const leftmost = bounds.getWest();
-  const rightmost = bounds.getEast();
-
+export async function getBlocksWithinRange(bounds: LatLngBounds) {
+ 
   const { data, error } = await supabase
-  .from("blocks")
-  .select("* WHERE lat >= $(lowest) AND lat <= $(highest) AND long >= $(leftmost) AND long <= $(rightmost) LIMIT 3000");
+    .from("blocks")
+    .select("*")
+    .gte("lat", bounds.getSouth())
+    .lte("lat", bounds.getNorth())
+    .gte("long", bounds.getWest())
+    .lte("long", bounds.getEast())
+    .limit(50000);
 
   if (error) {
-  console.error("Error fetching blocks:", error);
-  return [];
+    console.error("Error fetching blocks:", error);
+    return [];
   }
-  console.log("block range was called")
-  console.log(data)
   return data;
 }
 

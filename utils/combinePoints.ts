@@ -1,5 +1,5 @@
 import { HeatLatLngTuple } from "leaflet";
-import type { WeightedPoint } from "./attachData";
+import type { WeightedPoint } from "./attachDataFast";
 
 export function combinePoints(
     points: WeightedPoint[],

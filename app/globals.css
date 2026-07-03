@@ -128,3 +128,7 @@
     @apply font-sans;
   }
 }
+
+.leaflet-heatmap-layer {
+    opacity: 0.5;
+}

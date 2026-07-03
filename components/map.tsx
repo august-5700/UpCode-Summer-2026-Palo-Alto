@@ -1,8 +1,9 @@
 'use client';
 
 import { use, useEffect, useRef, useState } from 'react';
-import L, { LatLngTuple, HeatLatLngTuple } from 'leaflet';
+import L, { LatLngTuple, HeatLatLngTuple, Map as MapType } from 'leaflet';
 import 'leaflet.heat';
+import { rankNormalize } from '@/utils/normalize';
 
 import 'leaflet/dist/leaflet.css';
 import { heatRadiusForZoom } from '@/utils/heatRadius';
@@ -17,9 +18,10 @@ interface MapProps {
 }
 import { initialize } from 'next/dist/server/lib/render-server';
 import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
-import { attachData, attachWeightedData } from '@/utils/attachData';
+import { attachData, attachWeightedData } from '@/utils/attachDataFast';
 import { on } from 'node:cluster';
 import { request } from 'node:http';
+import { computeHeatSimple } from '@/utils/score';
 
 //for selecting coordinates
 interface MapProps {
@@ -29,15 +31,17 @@ interface MapProps {
 
 const maxZoom = 15;
 const blockThreshold = 11;
-const subDivisions = 70
+const subDivisions = 180;
+
 
 // How to convert points to heatmap tuples
-const toHeatTuples = (points: any[]): HeatLatLngTuple[] =>
-    points.map((pt:any) => [
-        pt.lat || 0,
-        pt.long || 0,
-        (pt.median_gross_rent || 1)/(pt.median_home_value || 1)
-    ]);
+const toHeatTuples = (points: any[]): HeatLatLngTuple[] => {
+    const scores = points.map((pt: any) =>
+        computeHeatSimple(pt.median_home_value, pt.median_gross_rent) || 0
+    );
+    const norm = rankNormalize(scores);
+    return points.map((pt: any, i: number) => [pt.lat || 0, pt.long || 0, norm[i]]);
+};
 
 
 export default function Map({ onSelectCoords, onHover }: MapProps) {
@@ -96,16 +100,27 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
             // Different id for each refresh call
             const requestId = ++requestIdRef.current;
             
-            // Grabs zoom
+            // Grabs zoom and bounds
             const zoom = map.getZoom();
+            const bounds = map.getBounds()
+
+        
+
+            //padded bounds
+            const padBounds = bounds.pad(1.0)
+            
 
             // If the zoom is past the threshold the raw data is grabbed from blocks dataset
             // Otherwise its grabbed from counties dataset
+            
             const raw = 
                 zoom >= blockThreshold
-                    ? await getBlocksWithinRange(map)
+                    ? await getBlocksWithinRange(padBounds)
                     : await getCounties();
-                    
+            console.log("data")
+            console.log(raw)
+
+            
             // Checks if the requestId is current and that there is a map
             if(requestId !== requestIdRef.current || !mapRef.current) return;
 
@@ -114,11 +129,12 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
             pointsRef.current = raw;
 
             // Sorts raw data
-            const sorted = toHeatTuples(raw).sort((a, b) => a[0] - b[0]);
+            
+            const sorted = toHeatTuples(raw); // Removed the sort since the new method does not require it.
             
 
             // Finding the space between grid points
-            const bounds = map.getBounds()
+            
             const gridSpacing = bounds.getSouthEast().distanceTo(bounds.getSouthWest())/subDivisions;
 
 
@@ -132,7 +148,7 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
 
             // Updating the radius and blur
             const r = heatRadiusForZoom(map, gridSpacing);
-            heatRef.current.setOptions({ radius: r, blur: r * 0.5 });
+            heatRef.current.setOptions({ radius: r, blur: r , maxZoom: zoom});
 
             // Updating the grid of heat points
             heat.setLatLngs(combined)
@@ -186,7 +202,7 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
     }, []);
 
 return (
-    <div className="relative w-screen h-screen">
+    <div className="relative w-screen h-screen overflow-hidden">
 
         {loading && (
             <div className="absolute inset-0 z-10 flex items-center justify-center">
@@ -196,7 +212,13 @@ return (
 
         <div
             ref={containerRef}
-            className="w-full h-full z-0"
+            className="absolute z-0"
+            style={{
+                width: '200vw',
+                height: '200vh',
+                left: '-50vw',
+                top: '-50vh',
+            }}
         />
     </div>
     );
