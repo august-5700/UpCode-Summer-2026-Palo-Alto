@@ -50,11 +50,11 @@ export function Search({handleSubmit}: SearchProps) {
     <Combobox items={menu}>
         <ComboboxInput placeholder="Search for a county"
         className='absolute top-4 left-6 z-[1000]
-        h-11 w-64 px-3
+        h-11 w-64 px-4
         rounded-full
         border border-white/40
         bg-white/50
-        text-sm/4 text-gray-900 placeholder-gray-700
+        text-sm/4 text-gray-900 placeholder-gray-500
         shadow-xl
         backdrop-blur-2xl backdrop-saturate-150'
         onChange={(e) => handleSearchChange(e.target.value)}
