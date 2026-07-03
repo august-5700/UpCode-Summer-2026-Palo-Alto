@@ -6,6 +6,7 @@ import Sidebar from "./sidebar";
 import MapTooltip from "./map-tooltip";
 import getCounties, { getTractByCoords, getCountyByCoords, type TractData } from "@/utils/api";
 import { Search } from "./search";
+import { Filters } from "./filters";
 
 type Hover = { block: any; x: number; y: number; countyName: string | null } | null;
 
@@ -74,6 +75,7 @@ export default function MapView() {
       {tract && <Sidebar data={tract} onClose={() => setTract(null)} />}
       {hover && <MapTooltip block={hover.block} x={hover.x} y={hover.y} countyName={hover.countyName} />}
       <Search handleSubmit={(lat, lng) => handleSelect(lat, lng, 'county')}/>
+      <Filters />
     </>
   );
 }
