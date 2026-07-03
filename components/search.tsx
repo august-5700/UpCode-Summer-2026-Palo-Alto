@@ -60,7 +60,7 @@ export function Search({handleSubmit}: SearchProps) {
         onChange={(e) => handleSearchChange(e.target.value)}
     />
 
-      <ComboboxContent className='z-[1000] rounded-3xl border border-white/40 bg-white/50 text-gray-900 shadow-xl backdrop-blur-2xl backdrop-saturate-150'>
+      <ComboboxContent className='z-[1000] w-64 rounded-3xl border border-white/40 bg-white/50 text-gray-900 shadow-xl backdrop-blur-2xl backdrop-saturate-150'>
         <ComboboxEmpty className='text-gray-900'>No items found.</ComboboxEmpty>
         <ComboboxList className='text-gray-900'>
           {(item: GeoData) => (
