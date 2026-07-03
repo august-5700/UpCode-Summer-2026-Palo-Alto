@@ -2,12 +2,7 @@ import { HeatLatLngTuple } from "leaflet";
 
 /**
  * Uniform-grid spatial hash over [lat, lng] points, in degree space.
- *
- * Degree space matches the existing dist2D() metric (plain 2D euclidean on
- * lat/lng), so results are identical to the old findClosestNPoints path —
- * just without the O(N)-per-query scan. Note the shared caveat: a degree of
- * longitude shrinks with latitude, so "nearest" is slightly stretched E-W at
- * high latitudes. Same behavior as before, now documented.
+ * Same as before, plus queryWithinRadius for kernel smoothing.
  */
 
 export interface Neighbor {
@@ -18,16 +13,11 @@ export interface Neighbor {
 export interface SpatialHash {
     cellSize: number;
     cells: Map<string, HeatLatLngTuple[]>;
-    /** rings needed to cover the full data extent — termination bound for sparse queries */
     maxRings: number;
 }
 
 const keyOf = (row: number, col: number) => `${row}|${col}`;
 
-/**
- * Pick a cell size targeting ~2 points per occupied cell, from the data's
- * bounding box. Good default; override if you profile something better.
- */
 export function estimateCellSize(data: HeatLatLngTuple[]): number {
     let minLat = Infinity, maxLat = -Infinity;
     let minLng = Infinity, maxLng = -Infinity;
@@ -73,17 +63,38 @@ export function buildSpatialHash(
 }
 
 /**
- * k nearest neighbors via ring expansion.
- *
- * Ring 0 is the query's own cell; ring r is the perimeter of the
- * (2r+1)x(2r+1) block around it. Any point in ring r is at least
- * (r-1)*cellSize away, so once we hold k candidates whose worst distance
- * beats that bound, no further ring can improve the answer and we stop.
- * Typical cost: 1-2 rings ≈ a handful of points, regardless of N.
- *
- * Returns neighbors sorted nearest-first, with distances included so the
- * caller doesn't recompute them. Returns fewer than k if the dataset is
- * smaller than k.
+ * All points within `radius` degrees of (lat, lng), with distances.
+ * Scans only the cells overlapping the radius footprint, so cost tracks
+ * local density, not total N. Order is arbitrary (kernel sums don't care).
+ */
+export function queryWithinRadius(
+    hash: SpatialHash,
+    lat: number,
+    lng: number,
+    radius: number,
+): Neighbor[] {
+    const { cellSize, cells } = hash;
+    const r = Math.ceil(radius / cellSize);
+    const row0 = Math.floor(lat / cellSize);
+    const col0 = Math.floor(lng / cellSize);
+    const out: Neighbor[] = [];
+
+    for (let row = row0 - r; row <= row0 + r; row++) {
+        for (let col = col0 - r; col <= col0 + r; col++) {
+            const bucket = cells.get(keyOf(row, col));
+            if (!bucket) continue;
+            for (const pt of bucket) {
+                const d = Math.hypot(pt[0] - lat, pt[1] - lng);
+                if (d <= radius) out.push({ pt, dist: d });
+            }
+        }
+    }
+    return out;
+}
+
+/**
+ * k nearest neighbors via ring expansion (unchanged; still used by the
+ * hover lookup and as the sparse-area fallback in kernel smoothing).
  */
 export function queryKNearest(
     hash: SpatialHash,
@@ -95,7 +106,7 @@ export function queryKNearest(
     const row0 = Math.floor(lat / cellSize);
     const col0 = Math.floor(lng / cellSize);
 
-    const best: Neighbor[] = []; // kept sorted ascending; k is tiny (~3)
+    const best: Neighbor[] = [];
 
     const consider = (pt: HeatLatLngTuple) => {
         const d = Math.hypot(pt[0] - lat, pt[1] - lng);
@@ -114,20 +125,16 @@ export function queryKNearest(
     };
 
     for (let r = 0; r <= maxRings; r++) {
-        // Prune: nothing in ring r (or beyond) can beat our current k-th best.
         if (best.length === k && (r - 1) * cellSize > best[best.length - 1].dist) {
             break;
         }
-
         if (r === 0) {
             scanCell(row0, col0);
         } else {
-            // top and bottom edges of the ring
             for (let col = col0 - r; col <= col0 + r; col++) {
                 scanCell(row0 - r, col);
                 scanCell(row0 + r, col);
             }
-            // left and right edges, excluding corners already scanned
             for (let row = row0 - r + 1; row <= row0 + r - 1; row++) {
                 scanCell(row, col0 - r);
                 scanCell(row, col0 + r);

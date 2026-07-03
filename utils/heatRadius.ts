@@ -6,7 +6,7 @@ export function heatRadiusForZoom(
     map: L.Map,
     spacing: number,
     zoom: number = map.getZoom(),
-    factor: number = 0.9,
+    factor: number = 0.8,
 ): number {
     const lngDelta = (spacing / R) * (180 / Math.PI);
     const p0 = map.project([0, 0], zoom);
