@@ -48,22 +48,21 @@ export function Search({handleSubmit}: SearchProps) {
 
   return (
     <Combobox items={menu}>
-        <ComboboxInput placeholder="Search..."  
-        className='absolute top-4 
-        left-6 z-1000 
-        bg-white/50 
-        backdrop-blur-lg 
-        text-black 
-        placeholder-black
-        shadow-md
+        <ComboboxInput placeholder="Search..."
+        className='absolute top-4 left-6 z-[1000]
+        h-10 px-4
         rounded-3xl
-        h-10'
+        border border-white/40
+        bg-white/50
+        text-gray-900 placeholder-gray-500
+        shadow-xl
+        backdrop-blur-2xl backdrop-saturate-150'
         onChange={(e) => handleSearchChange(e.target.value)}
     />
-    
-      <ComboboxContent className='z-100 bg-white/10 backdrop-blur-lg text-black rounded-2xl h-10'>
-        <ComboboxEmpty className='z-100 bg-white/10 backdrop-blur-lg text-black rounded-2xl h-10'>No items found.</ComboboxEmpty>
-        <ComboboxList className='z-1000 bg-white/10 backdrop-blur-lg text-black rounded-2xl h-10'>
+
+      <ComboboxContent className='z-[1000] rounded-3xl border border-white/40 bg-white/50 text-gray-900 shadow-xl backdrop-blur-2xl backdrop-saturate-150'>
+        <ComboboxEmpty className='text-gray-900'>No items found.</ComboboxEmpty>
+        <ComboboxList className='text-gray-900'>
           {(item: GeoData) => (
             <ComboboxItem key={item.name} value={item.name} onClick={()=>handleSubmit(item.lat, item.lng, )}>
               {item.name}
