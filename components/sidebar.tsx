@@ -29,10 +29,10 @@ export default function Sidebar({ data, onClose }: { data: TractData; onClose: (
           HeatMap Score
         </p>
         {data.score == null ? (
-          <p className="mt-1 text-7xl font-extrabold leading-none text-gray-300">N/A</p>
+          <p className="mt-1 text-6xl font-extrabold leading-none text-gray-300">N/A</p>
         ) : (
           <p className="mt-1 flex items-baseline gap-1 font-extrabold leading-none text-green-600">
-            <span className="text-8xl">{data.score.toFixed(1)}</span>
+            <span className="text-7xl">{data.score.toFixed(1)}</span>
             <span className="text-2xl text-gray-300">/10</span>
           </p>
         )}
@@ -52,7 +52,7 @@ export default function Sidebar({ data, onClose }: { data: TractData; onClose: (
         )}
 
         {/* progress bar filled up to the score */}
-        <div className="relative mt-2 h-3 w-full overflow-hidden rounded-full bg-gray-200">
+        <div className="relative mt-4 h-3 w-full overflow-hidden rounded-full bg-gray-200">
           {data.score != null && data.score > 0 && (
             <div
               className="absolute inset-y-0 left-0 overflow-hidden rounded-full"

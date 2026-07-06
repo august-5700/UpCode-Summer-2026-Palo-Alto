@@ -48,24 +48,23 @@ export function Search({handleSubmit}: SearchProps) {
 
   return (
     <Combobox items={menu}>
-        <ComboboxInput placeholder="Search..."  
-        className='absolute top-4 
-        left-6 z-1000 
-        bg-white/10 
-        backdrop-blur-lg 
-        text-black 
-        placeholder-black
-        shadow-md
-        rounded-3xl
-        h-10'
+        <ComboboxInput placeholder="Search for a county"
+        className='absolute top-4 left-6 z-1000
+        h-11 w-64 px-4
+        rounded-full
+        border border-white/40
+        bg-white/50
+        text-sm/4 text-gray-900 placeholder-gray-500
+        shadow-xl
+        backdrop-blur-2xl backdrop-saturate-150'
         onChange={(e) => handleSearchChange(e.target.value)}
     />
-    
-      <ComboboxContent className='z-100 bg-white/10 backdrop-blur-lg text-black'>
-        <ComboboxEmpty className='z-100 bg-white/10 backdrop-blur-lg text-black'>No items found.</ComboboxEmpty>
-        <ComboboxList className='z-1000 bg-white/10 backdrop-blur-lg text-black'>
+
+      <ComboboxContent className='absolute top-3 -left-4 z-1000 w-64 rounded-2xl border border-white/40 bg-white/50 text-gray-900 shadow-xl backdrop-blur-2xl backdrop-saturate-150'>
+        <ComboboxEmpty className='text-gray-900'>No items found.</ComboboxEmpty>
+        <ComboboxList className='text-gray-900'>
           {(item: GeoData) => (
-            <ComboboxItem key={item.name} value={item.name} onClick={()=>handleSubmit(item.lat, item.lng, )}>
+            <ComboboxItem key={item.name} value={item.name} onClick={()=>handleSubmit(item.lat, item.lng, )} className='rounded-xl'>
               {item.name}
             </ComboboxItem>
           )}
