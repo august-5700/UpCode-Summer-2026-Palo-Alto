@@ -11,7 +11,7 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group"
-import { Search, XIcon, CheckIcon } from "lucide-react"
+import { Search, XIcon } from "lucide-react"
 
 const Combobox = ComboboxPrimitive.Root
 
@@ -148,13 +148,6 @@ function ComboboxItem({
       {...props}
     >
       {children}
-      <ComboboxPrimitive.ItemIndicator
-        render={
-          <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center" />
-        }
-      >
-        <CheckIcon className="pointer-events-none" />
-      </ComboboxPrimitive.ItemIndicator>
     </ComboboxPrimitive.Item>
   )
 }
