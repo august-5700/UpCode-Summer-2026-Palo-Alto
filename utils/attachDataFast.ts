@@ -2,7 +2,7 @@ import { HeatLatLngTuple, LatLngTuple } from "leaflet";
 import { point } from "@turf/helpers";
 import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
 import { Feature, MultiPolygon, Polygon } from "geojson";
-import usaData from "@/data/usa.json";
+import usaData from "@/data/usa2.json";
 import { buildSpatialHash, queryKNearest } from "./spatialHash";
 
 // Accept Feature, FeatureCollection, or bare geometry — merge to one MultiPolygon.

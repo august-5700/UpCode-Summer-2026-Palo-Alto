@@ -9,18 +9,15 @@ import 'leaflet/dist/leaflet.css';
 import { heatRadiusForZoom } from '@/utils/heatRadius';
 
 import { pixelRadius } from '@/utils/convertToMeters';
-import getCounties, { getBlocks, getBlocksWithinRange} from '@/utils/api'
+import getCounties, { getBlocks, getBlocksWithinRange, getGeoJsonByCounty} from '@/utils/api'
 import { combinePoints } from '@/utils/combinePoints';
 //for selecting coordinates
 interface MapProps {
     onSelectCoords: (lat: number, lng: number, level: 'county' | 'block') => void;
     onHover: (block: any | null, x: number, y: number) => void;
 }
-import { initialize } from 'next/dist/server/lib/render-server';
 import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
 import { attachData, attachWeightedData } from '@/utils/attachDataFast';
-import { on } from 'node:cluster';
-import { request } from 'node:http';
 import { computeHeatSimple } from '@/utils/score';
 
 //for selecting coordinates
@@ -31,7 +28,7 @@ interface MapProps {
 
 const maxZoom = 15;
 const blockThreshold = 11;
-const subDivisions = 180;
+const subDivisions = 95;
 
 
 // How to convert points to heatmap tuples
@@ -60,6 +57,7 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
 
     const [loading, setLoading] = useState(true);
     useEffect(() => {
+        console.log("Map useEffect started");
         // Checking if we have a container and that there isn't already a map in place
         if(!containerRef.current || mapRef.current) return;
 
@@ -90,7 +88,22 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
                 1.0: 'red'
             }
         }).addTo(map);
+
         heatRef.current = heat;
+
+        async function loadGeoJson() {
+            console.log('loading geojson')
+            const geojson = await getGeoJsonByCounty("01", "001");
+
+            if (!mapRef.current) return;
+
+            const layers = geojson.features.map((f:any)=>L.geoJSON(f));
+
+            // layers.addTo(mapRef.current);
+
+            console.log("Successfully added geojson");
+        }
+        loadGeoJson()
 
         // Single refresh function, all changes happen here
         // Calls when first initialized and when any movement happens, zoom/drag
@@ -154,6 +167,7 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
             heat.setLatLngs(combined)
 
             setLoading(false);
+            console.log('end of useEffect')
         };
         
         // Listener for when user clicks, grabs user's latitude and longitude
