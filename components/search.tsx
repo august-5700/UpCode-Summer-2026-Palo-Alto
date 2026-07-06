@@ -17,7 +17,7 @@ import { useState } from "react";
 // also we're going to need to find the most similar counties to the current search and display them in the dropdown which seems really time inefficient 
 
 interface SearchProps {
-        handleSubmit: (lat: number, lng: number) => void;
+        handleSubmit: (lat: number, lng: number, bbox:[number, number, number, number]) => void;
 }
 
 
@@ -30,6 +30,8 @@ export function Search({handleSubmit}: SearchProps) {
 
     const [menu, setMenu] = useState<GeoData[]>([])
 
+    const multiplier = 2;
+
     async function handleSearchChange(input: String) {
         const results = await getResultFromAddressAutocomplete(input, null)
         console.log(results)
@@ -39,7 +41,8 @@ export function Search({handleSubmit}: SearchProps) {
                     name: feature.properties.address_line1,
                     lat: feature.properties.lat,
                     lng: feature.properties.lon,
-                    county: feature.properties.county
+                    county: feature.properties.county,
+                    bbox: feature.bbox
                 }
             }
             ))
@@ -64,7 +67,7 @@ export function Search({handleSubmit}: SearchProps) {
         <ComboboxEmpty className='text-gray-900'>No items found.</ComboboxEmpty>
         <ComboboxList className='text-gray-900'>
           {(item: GeoData) => (
-            <ComboboxItem key={item.name} value={item.name} onClick={()=>handleSubmit(item.lat, item.lng, )} className='rounded-xl'>
+            <ComboboxItem key={item.name} value={item.name} onClick={()=>handleSubmit(item.lat, item.lng, item.bbox)} className='rounded-xl'>
               {item.name}
             </ComboboxItem>
           )}
