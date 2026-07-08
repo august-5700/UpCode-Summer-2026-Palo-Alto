@@ -27,6 +27,7 @@ interface MapProps {
 }
 
 const maxZoom = 15;
+const minZoom = 2;
 const blockThreshold = 11;
 const subDivisions = 95;
 
@@ -115,6 +116,7 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
             
             // Grabs zoom and bounds
             const zoom = map.getZoom();
+            if(zoom < minZoom) heatRef.current.setOptions({ zoom: minZoom });return;
             const bounds = map.getBounds()
 
         
