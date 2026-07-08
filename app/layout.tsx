@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "UpCode Palo Alto Team App",
-  description: "An awesome tool fro real estate investors looking for the best place to invest",
+  description: "An awesome tool for real estate investors looking for the best place to invest",
 };
 
 export default function RootLayout({

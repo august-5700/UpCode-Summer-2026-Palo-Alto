@@ -1,7 +1,7 @@
 'use client';
 
 import { use, useEffect, useRef, useState } from 'react';
-import L, { LatLngTuple, HeatLatLngTuple, Map as MapType } from 'leaflet';
+import L, { LatLngTuple, HeatLatLngTuple, Map as MapType, HeatLayer } from 'leaflet';
 import 'leaflet.heat';
 import { rankNormalize } from '@/utils/normalize';
 
@@ -11,20 +11,20 @@ import { heatRadiusForZoom } from '@/utils/heatRadius';
 import { pixelRadius } from '@/utils/convertToMeters';
 import getCounties, { getBlocks, getBlocksWithinRange, getGeoJsonByCounty} from '@/utils/api'
 import { combinePoints } from '@/utils/combinePoints';
-//for selecting coordinates
-interface MapProps {
-    onSelectCoords: (lat: number, lng: number, level: 'county' | 'block') => void;
-    onHover: (block: any | null, x: number, y: number) => void;
-}
 import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
 import { attachData, attachWeightedData } from '@/utils/attachDataFast';
 import { computeHeatSimple } from '@/utils/score';
 
-//for selecting coordinates
 interface MapProps {
     onSelectCoords: (lat: number, lng: number, level: 'county' | 'block') => void;
     onHover: (block: any | null, x: number, y: number) => void;
+    center?: {
+        lat: number;
+        lng: number;
+        bbox: [number, number, number, number];
+    };
 }
+
 
 const maxZoom = 15;
 const minZoom = 2;
@@ -42,7 +42,7 @@ const toHeatTuples = (points: any[]): HeatLatLngTuple[] => {
 };
 
 
-export default function Map({ onSelectCoords, onHover }: MapProps) {
+export default function Map({ onSelectCoords, onHover, center }: MapProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const pointsRef = useRef<any[]>([]);
     const mapRef = useRef<L.Map | null>(null);
@@ -57,6 +57,72 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
     }, [onSelectCoords, onHover]);
 
     const [loading, setLoading] = useState(true);
+
+    // Single refresh function, all changes happen here
+    // Calls when first initialized and when any movement happens, zoom/drag
+    const refresh = async (map: MapType, heat: HeatLayer) => {
+
+            // Creates request id for the called refresh function
+            // Different id for each refresh call
+            const requestId = ++requestIdRef.current;
+            
+            // Grabs zoom and bounds
+            const zoom = map.getZoom();
+            if(zoom < minZoom) heatRef.current.setOptions({ zoom: minZoom });return;
+            const bounds = map.getBounds()
+
+    
+
+        //padded bounds
+        const padBounds = bounds.pad(1.0)
+        
+
+        // If the zoom is past the threshold the raw data is grabbed from blocks dataset
+        // Otherwise its grabbed from counties dataset
+        
+        const raw = 
+            zoom >= blockThreshold
+                ? await getBlocksWithinRange(padBounds)
+                : await getCounties();
+        console.log("data")
+        console.log(raw)
+
+        
+        // Checks if the requestId is current and that there is a map
+        if(requestId !== requestIdRef.current || !mapRef.current) return;
+
+
+        // Update pointsRef with the new raw data
+        pointsRef.current = raw;
+
+        // Sorts raw data
+        
+        const sorted = toHeatTuples(raw); // Removed the sort since the new method does not require it.
+        
+
+        // Finding the space between grid points
+        
+        const gridSpacing = bounds.getSouthEast().distanceTo(bounds.getSouthWest())/subDivisions;
+
+
+        // Generating the grid
+        const grid = generateTriangleGrid([bounds.getSouth(),bounds.getWest()], [bounds.getNorth(), bounds.getEast()], gridSpacing);
+
+
+        // Taking sorted data and attaching to grid
+        const combined = combinePoints(attachWeightedData(grid, sorted));
+
+
+        // Updating the radius and blur
+        const r = heatRadiusForZoom(map, gridSpacing);
+        heatRef.current.setOptions({ radius: r, blur: r , maxZoom: zoom});
+
+        // Updating the grid of heat points
+        heat.setLatLngs(combined)
+
+        setLoading(false);
+    };
+
     useEffect(() => {
         console.log("Map useEffect started");
         // Checking if we have a container and that there isn't already a map in place
@@ -105,72 +171,6 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
             console.log("Successfully added geojson");
         }
         loadGeoJson()
-
-        // Single refresh function, all changes happen here
-        // Calls when first initialized and when any movement happens, zoom/drag
-        const refresh = async () => {
-
-            // Creates request id for the called refresh function
-            // Different id for each refresh call
-            const requestId = ++requestIdRef.current;
-            
-            // Grabs zoom and bounds
-            const zoom = map.getZoom();
-            if(zoom < minZoom) heatRef.current.setOptions({ zoom: minZoom });return;
-            const bounds = map.getBounds()
-
-        
-
-            //padded bounds
-            const padBounds = bounds.pad(1.0)
-            
-
-            // If the zoom is past the threshold the raw data is grabbed from blocks dataset
-            // Otherwise its grabbed from counties dataset
-            
-            const raw = 
-                zoom >= blockThreshold
-                    ? await getBlocksWithinRange(padBounds)
-                    : await getCounties();
-            console.log("data")
-            console.log(raw)
-
-            
-            // Checks if the requestId is current and that there is a map
-            if(requestId !== requestIdRef.current || !mapRef.current) return;
-
-
-            // Update pointsRef with the new raw data
-            pointsRef.current = raw;
-
-            // Sorts raw data
-            
-            const sorted = toHeatTuples(raw); // Removed the sort since the new method does not require it.
-            
-
-            // Finding the space between grid points
-            
-            const gridSpacing = bounds.getSouthEast().distanceTo(bounds.getSouthWest())/subDivisions;
-
-
-            // Generating the grid
-            const grid = generateTriangleGrid([bounds.getSouth(),bounds.getWest()], [bounds.getNorth(), bounds.getEast()], gridSpacing);
-
-
-            // Taking sorted data and attaching to grid
-            const combined = combinePoints(attachWeightedData(grid, sorted));
-
-
-            // Updating the radius and blur
-            const r = heatRadiusForZoom(map, gridSpacing);
-            heatRef.current.setOptions({ radius: r, blur: r , maxZoom: zoom});
-
-            // Updating the grid of heat points
-            heat.setLatLngs(combined)
-
-            setLoading(false);
-            console.log('end of useEffect')
-        };
         
         // Listener for when user clicks, grabs user's latitude and longitude
         map.on("click", (e: L.LeafletMouseEvent) => {
@@ -203,10 +203,10 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
         map.on("mouseout", () => onHover(null, 0, 0));
 
         // Checks if the user moves, zoom/drag, if so calls the refresh function
-        map.on('moveend', refresh);
+        map.on('moveend', () => refresh(map, heat));
 
         // After all the initializing is finished calls refresh
-        refresh();
+        refresh(map, heat);
 
         // Cleanup function
         return () => {
@@ -216,6 +216,32 @@ export default function Map({ onSelectCoords, onHover }: MapProps) {
             heatRef.current = null;
         };
     }, []);
+
+    // pan to the new center of the map if the center changes
+    useEffect(() => {
+        if (!center || !mapRef.current) return;
+        console.log('center change')
+        if (center.bbox) {
+            const bounds = L.latLngBounds(
+                [center.bbox[1], center.bbox[0]], // southwest
+                [center.bbox[3], center.bbox[2]]  // northeast
+            );
+
+            mapRef.current.fitBounds(bounds, {
+                padding: [40, 40],
+                animate: true,
+            });
+        } else {
+            mapRef.current.flyTo(
+                [center.lat, center.lng],
+                mapRef.current.getZoom(),
+                {
+                    animate: true,
+                }
+            );
+        }
+        // refresh(mapRef.current, heatRef.current)
+    }, [center]);
 
 return (
     <div className="relative w-screen h-screen overflow-hidden">

@@ -3,4 +3,5 @@ type GeoData = {
     lat: number;
     lng: number;
     county: string;
+    bbox: [number, number, number, number];
 }

@@ -7,6 +7,7 @@ import MapTooltip from "./map-tooltip";
 import getCounties, { getTractByCoords, getCountyByCoords, type TractData } from "@/utils/api";
 import { Search } from "./search";
 import { Filters } from "./filters";
+import { LatLngTuple } from "leaflet";
 
 type Hover = { block: any; x: number; y: number; countyName: string | null } | null;
 
@@ -16,6 +17,12 @@ const MOVE_THRESHOLD = 10; // px, moves smaller than this count as still (ignore
 export default function MapView() {
   const [tract, setTract] = useState<TractData | null>(null);
   const [hover, setHover] = useState<Hover>(null);
+  const [mapCenter, setMapCenter] = useState<{
+      lat: number;
+      lng: number;
+      bbox: [number, number, number, number];
+  }>();
+
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const anchorRef = useRef<{ x: number; y: number } | null>(null);
@@ -71,10 +78,14 @@ export default function MapView() {
       <Map 
         onSelectCoords={(lat, lng, level) => handleSelect(lat, lng, level)}
         onHover={handleHover} 
+        center={mapCenter}
       />
       {tract && <Sidebar data={tract} onClose={() => setTract(null)} />}
       {hover && <MapTooltip block={hover.block} x={hover.x} y={hover.y} countyName={hover.countyName} />}
-      <Search handleSubmit={(lat, lng) => handleSelect(lat, lng, 'county')}/>
+      <Search handleSubmit={(lat, lng, bbox) => {
+        handleSelect(lat, lng, 'county')
+        setMapCenter({lat: lat, lng: lng, bbox: bbox})
+        }}/>
       <Filters />
     </>
   );
