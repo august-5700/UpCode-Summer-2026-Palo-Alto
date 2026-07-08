@@ -142,15 +142,24 @@ export default function Map({ onSelectCoords, onHover, center }: MapProps) {
         // Storing the map in the mapRef object
         mapRef.current = map;
 
+        //const heat = L.heatLayer(heatPoints, {
+            // radius: targetRadius,
+            // gradient: {
+            //     0.4: '#8B0000',   // dark red
+            //     0.65: 'orange', 
+            //     0.8: '#90ee90',   // light green
+            //     1.0: 'green'
+            // }
         // Creating the heat layer
         const heat = (L as any).heatLayer([], {
+            opacity: 1.0,
             radius: 25,
             blur: 15,
             gradient: {
-                0.4: 'blue',
-                0.65: 'lime',
-                0.995: 'orange',
-                1.0: 'red'
+                0.25: '#660000',
+                0.60: '#90EE90',
+                0.80: '#90EE90',
+                1.0: 'green'
             }
         }).addTo(map);
 
