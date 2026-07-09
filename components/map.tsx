@@ -17,13 +17,14 @@ import { computeHeatSimple } from '@/utils/score';
 import { renderCountyChoropleth, valueToHex } from '@/utils/renderCountyChoropleth';
 
 interface MapProps {
-    onSelectCoords: (lat: number, lng: number, level: 'county' | 'block') => void;
+    onSelectCoords: (lat: number, lng: number, level: "county" | "block") => void;
     onHover: (block: any | null, x: number, y: number) => void;
     center?: {
         lat: number;
         lng: number;
         bbox: [number, number, number, number];
     };
+    activeLayer: string;
 }
 
 
@@ -43,13 +44,15 @@ const toHeatTuples = (points: any[]): HeatLatLngTuple[] => {
 };
 
 
-export default function Map({ onSelectCoords, onHover, center }: MapProps) {
+export default function Map({ onSelectCoords, onHover, center, activeLayer }: MapProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const pointsRef = useRef<any[]>([]);
     const mapRef = useRef<L.Map | null>(null);
     const heatRef = useRef<any>(null);
     const requestIdRef = useRef(0);
-
+    const choroplethRef = useRef<L.GeoJSON | null>(null);
+    const choroplethRequestIdRef = useRef(0);
+    
     const onSelectCoordsRef = useRef(onSelectCoords);
     const onHoverRef = useRef(onHover);
     useEffect(() => {
@@ -63,21 +66,18 @@ export default function Map({ onSelectCoords, onHover, center }: MapProps) {
     // Calls when first initialized and when any movement happens, zoom/drag
     const refresh = async (map: MapType, heat: HeatLayer) => {
 
-            // Creates request id for the called refresh function
-            // Different id for each refresh call
-            const requestId = ++requestIdRef.current;
-            
-            // Grabs zoom and bounds
-            const zoom = map.getZoom();
-            if(zoom < minZoom) heatRef.current.setOptions({ zoom: minZoom });return;
-            const bounds = map.getBounds()
-
-    
+        // Creates request id for the called refresh function
+        // Different id for each refresh call
+        const requestId = ++requestIdRef.current;
+        
+        // Grabs zoom and bounds
+        const zoom = map.getZoom();
+        // if(zoom < minZoom) heatRef.current.setOptions({ zoom: minZoom });return;
+        const bounds = map.getBounds()
 
         //padded bounds
         const padBounds = bounds.pad(1.0)
-        
-
+    
         // If the zoom is past the threshold the raw data is grabbed from blocks dataset
         // Otherwise its grabbed from counties dataset
         
@@ -116,18 +116,51 @@ export default function Map({ onSelectCoords, onHover, center }: MapProps) {
 
         // Updating the radius and blur
         const r = heatRadiusForZoom(map, gridSpacing);
+        if (!heatRef.current._map) return;
         heatRef.current.setOptions({ radius: r, blur: r , maxZoom: zoom});
 
         // Updating the grid of heat points
         heat.setLatLngs(combined)
 
         setLoading(false);
-
-
-
-
-
     };
+
+    const AUTO_SWITCH_ZOOM = 11;
+
+    function updateLayerVisibility() {
+        if (!mapRef.current || !heatRef.current || !choroplethRef.current) return;
+
+        const map = mapRef.current;
+        const zoom = map.getZoom();
+
+        const showHeat =
+            activeLayer === "heatmap" ||
+            (activeLayer === "default" && zoom >= AUTO_SWITCH_ZOOM);
+
+        const showChoropleth =
+            activeLayer === "choropleth" ||
+            (activeLayer === "default" && zoom < AUTO_SWITCH_ZOOM);
+        
+        console.log('showheat', showHeat, 'showchr', showChoropleth)
+
+        if (showHeat) {
+            if (!map.hasLayer(heatRef.current))
+                heatRef.current.addTo(map);
+        } else {
+            if (map.hasLayer(heatRef.current))
+                map.removeLayer(heatRef.current);
+        }
+
+        if (showChoropleth) {
+            if (!map.hasLayer(choroplethRef.current!)) {
+                choroplethRef.current!.addTo(map);
+            }
+        } else {
+            if (map.hasLayer(choroplethRef.current!)) {
+                map.removeLayer(choroplethRef.current!);
+            }
+        }
+    }
 
     useEffect(() => {
         console.log("Map useEffect started");
@@ -164,22 +197,49 @@ export default function Map({ onSelectCoords, onHover, center }: MapProps) {
 
         heatRef.current = heat;
         
-        async function loadChoropleth(){
-            const counties = await getCounties()
-            console.log('counties: ', counties)
-            await renderCountyChoropleth(mapRef.current!, (feature) => {
-                if (!feature.properties || feature.properties == null){
-                    return '#ffffff';
-                } else {
-                    const county = counties.filter((county: any)=>county.name == feature.properties?.NAME && county.state_fip == feature.properties?.STATEFP)[0]
-                    
-                    if (county){
-                        return valueToHex(((county.median_gross_rent ?? 0) / (county.median_home_value ?? 1)), 0, 0.01, '#ff0000', '#00ff00')
-                    } else return '#ffffff'
+        async function loadChoropleth() {
+            const requestId = ++choroplethRequestIdRef.current;
+
+            const counties = await getCounties();
+
+            const layer = await renderCountyChoropleth((feature) => {
+                if (!feature.properties){
+                    console.log('no properties')
+                    return "#ffffff";
                 }
+                    
+                const county = counties.filter((county: any)=>county.name == feature.properties?.NAME && county.state_fip == feature.properties?.STATEFP)[0]
+
+                if (!county){
+                    console.log('no county')
+                    return "#ffffff";
+                }
+                    
+
+                return valueToHex(
+                    (county.median_gross_rent ?? -1) /
+                    (county.median_home_value ?? -1),
+                    0,
+                    0.0075,
+                    "#ff0000",
+                    "#00ff00"
+                );
             });
+
+            // Ignore stale result
+            if (
+                requestId !== choroplethRequestIdRef.current ||
+                !mapRef.current
+            ) {
+                return;
+            }
+
+            choroplethRef.current = layer;
+
+            updateLayerVisibility();
         }
         loadChoropleth()
+        console.log("Creating choropleth");
         
         // Listener for when user clicks, grabs user's latitude and longitude
         map.on("click", (e: L.LeafletMouseEvent) => {
@@ -212,17 +272,21 @@ export default function Map({ onSelectCoords, onHover, center }: MapProps) {
         map.on("mouseout", () => onHover(null, 0, 0));
 
         // Checks if the user moves, zoom/drag, if so calls the refresh function
-        map.on('moveend', () => refresh(map, heat));
+        map.on('moveend', () => {updateLayerVisibility();refresh(map, heat)});
 
         // After all the initializing is finished calls refresh
         refresh(map, heat);
 
         // Cleanup function
         return () => {
+            choroplethRequestIdRef.current++;
             requestIdRef.current++;
+
             map.remove();
+
             mapRef.current = null;
             heatRef.current = null;
+            choroplethRef.current = null;
         };
     }, []);
 
@@ -251,6 +315,10 @@ export default function Map({ onSelectCoords, onHover, center }: MapProps) {
         }
         // refresh(mapRef.current, heatRef.current)
     }, [center]);
+
+    useEffect(() => {
+        updateLayerVisibility();
+    }, [activeLayer]);
 
 return (
     <div className="relative w-screen h-screen overflow-hidden">

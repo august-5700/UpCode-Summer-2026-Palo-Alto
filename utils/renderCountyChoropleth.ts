@@ -1,33 +1,20 @@
 import L from "leaflet";
 
-let countyLayer: L.GeoJSON | null = null;
-
 export async function renderCountyChoropleth(
-  map: L.Map,
   getColor: (feature: GeoJSON.Feature) => string
-) {
-  // Remove old layer if it exists
-  if (countyLayer) {
-    map.removeLayer(countyLayer);
-  }
-
-  // Load the GeoJSON
+): Promise<L.GeoJSON> {
   const geojson = await fetch("/counties.json").then((r) => r.json());
 
-  // Create the Leaflet layer
-  countyLayer = L.geoJSON(geojson, {
+  return L.geoJSON(geojson, {
     style: (feature) => ({
       fillColor: getColor(feature!),
       fillOpacity: 0.7,
-      color: "#ffffff",
+      color: getColor(feature!),
       weight: 0.5,
       opacity: 1,
     }),
   });
-
-  countyLayer.addTo(map);
 }
-
 
 export function valueToHex(
   value: number,
@@ -36,7 +23,9 @@ export function valueToHex(
   startColor = "#00ff00",
   endColor = "#ff0000"
 ): string {
-  // Clamp to range
+  if (value < 0){
+    return '#becfd3'
+  }
   const t = Math.max(0, Math.min(1, (value - min) / (max - min)));
 
   const start = hexToRgb(startColor);
