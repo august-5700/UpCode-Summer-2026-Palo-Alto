@@ -1,7 +1,7 @@
 'use client';
 
 import { use, useEffect, useRef, useState } from 'react';
-import L, { LatLngTuple, HeatLatLngTuple, Map as MapType, HeatLayer } from 'leaflet';
+import L, { LatLngTuple, HeatLatLngTuple, Map as MapType, HeatLayer, Layer } from 'leaflet';
 import 'leaflet.heat';
 import { rankNormalize } from '@/utils/normalize';
 
@@ -9,11 +9,12 @@ import 'leaflet/dist/leaflet.css';
 import { heatRadiusForZoom } from '@/utils/heatRadius';
 
 import { pixelRadius } from '@/utils/convertToMeters';
-import getCounties, { getBlocks, getBlocksWithinRange, getGeoJsonByCounty} from '@/utils/api'
+import getCounties, { getBlocksWithinRange} from '@/utils/api'
 import { combinePoints } from '@/utils/combinePoints';
 import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
 import { attachData, attachWeightedData } from '@/utils/attachDataFast';
 import { computeHeatSimple } from '@/utils/score';
+import { renderCountyChoropleth, valueToHex } from '@/utils/renderCountyChoropleth';
 
 interface MapProps {
     onSelectCoords: (lat: number, lng: number, level: 'county' | 'block') => void;
@@ -119,6 +120,11 @@ export default function Map({ onSelectCoords, onHover, center }: MapProps) {
         heat.setLatLngs(combined)
 
         setLoading(false);
+
+
+
+
+
     };
 
     useEffect(() => {
@@ -155,20 +161,23 @@ export default function Map({ onSelectCoords, onHover, center }: MapProps) {
         }).addTo(map);
 
         heatRef.current = heat;
-
-        async function loadGeoJson() {
-            console.log('loading geojson')
-            const geojson = await getGeoJsonByCounty("01", "001");
-
-            if (!mapRef.current) return;
-
-            const layers = geojson.features.map((f:any)=>L.geoJSON(f));
-
-            // layers.addTo(mapRef.current);
-
-            console.log("Successfully added geojson");
+        
+        async function loadChoropleth(){
+            const counties = await getCounties()
+            console.log('counties: ', counties)
+            await renderCountyChoropleth(mapRef.current!, (feature) => {
+                if (!feature.properties || feature.properties == null){
+                    return '#ffffff';
+                } else {
+                    const county = counties.filter((county: any)=>county.name == feature.properties?.NAME && county.state_fip == feature.properties?.STATEFP)[0]
+                    
+                    if (county){
+                        return valueToHex(((county.median_gross_rent ?? 0) / (county.median_home_value ?? 1)), 0, 0.01, '#ff0000', '#00ff00')
+                    } else return '#ffffff'
+                }
+            });
         }
-        loadGeoJson()
+        loadChoropleth()
         
         // Listener for when user clicks, grabs user's latitude and longitude
         map.on("click", (e: L.LeafletMouseEvent) => {
