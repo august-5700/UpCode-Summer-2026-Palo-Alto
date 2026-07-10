@@ -69,7 +69,7 @@ const num = (v: unknown): number | null => {
 const money = (v: number | null) =>
   v == null ? "N/A" : "$" + Math.round(v).toLocaleString();
 
-export async function getTractByCoords(
+export async function getBlockByCoords(
   lat: number,
   lng: number
 ): Promise<TractData | null> {

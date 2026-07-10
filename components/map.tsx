@@ -15,13 +15,14 @@ import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
 import { attachData, attachWeightedData } from '@/utils/attachDataFast';
 import { computeHeatSimple } from '@/utils/score';
 import { renderCountyChoropleth, valueToHex } from '@/utils/renderCountyChoropleth';
-import TestListingsModal from '@/components/test-listings-modal'
 
 
 
 interface MapProps {
     onSelectCoords: (lat: number, lng: number, level: "county" | "block") => void;
     onHover: (block: any | null, x: number, y: number) => void;
+    onZoomChange: (newZoom: number) => void;
+    setLoading: (value:boolean) => void;
     center?: {
         lat: number;
         lng: number;
@@ -49,7 +50,7 @@ const toHeatTuples = (points: any[]): HeatLatLngTuple[] => {
 };
 
 
-export default function Map({ onSelectCoords, onHover, center, activeLayer }: MapProps) {
+export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading, center, activeLayer }: MapProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const pointsRef = useRef<any[]>([]);
     const mapRef = useRef<L.Map | null>(null);
@@ -69,9 +70,6 @@ export default function Map({ onSelectCoords, onHover, center, activeLayer }: Ma
         onSelectCoordsRef.current = onSelectCoords;
         onHoverRef.current = onHover;
     }, [onSelectCoords, onHover]);
-
-    const [loading, setLoading] = useState(true);
-    const [showTest, setShowTest] = useState(false);
 
     // Single refresh function, all changes happen here
     // Calls when first initialized and when any movement happens, zoom/drag
@@ -289,6 +287,9 @@ export default function Map({ onSelectCoords, onHover, center, activeLayer }: Ma
 
         // Checks if the user moves, zoom/drag, if so calls the refresh function
         map.on('moveend', () => {updateLayerVisibility();refresh(map, heat)});
+        map.on('zoomend', () => {
+            onZoomChange(map.getZoom())
+        })
 
         // After all the initializing is finished calls refresh
         refresh(map, heat);
@@ -343,19 +344,6 @@ export default function Map({ onSelectCoords, onHover, center, activeLayer }: Ma
 return (
     <div className="relative w-screen h-screen overflow-hidden">
 
-        {loading && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center">
-                Loading map...
-            </div>
-        )}
-
-        <button
-            onClick={() => setShowTest(true)}
-            className="absolute left-4 top-4 z-[1000] rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-lg hover:bg-emerald-700"
-        >
-            Test listings
-        </button>
-
         <div
             ref={containerRef}
             className="absolute z-0"
@@ -367,7 +355,6 @@ return (
             }}
         />
 
-        {showTest && <TestListingsModal onClose={() => setShowTest(false)} />}
     </div>
     );
 }
