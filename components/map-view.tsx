@@ -24,8 +24,9 @@ export default function MapView() {
       bbox: [number, number, number, number];
   }>();
 
-  const [activeLayer, setActiveLayer] = useState<string>('default')
-
+const [activeLayer, setActiveLayer] = useState<
+  "default" | "heatmap" | "choropleth" | "none"
+>("default");
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const anchorRef = useRef<{ x: number; y: number } | null>(null);
@@ -76,6 +77,7 @@ export default function MapView() {
 
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
+
   return (
     <>
       <Map 
@@ -93,7 +95,14 @@ export default function MapView() {
       <Filters />
       <LayersToggle
         value={activeLayer}
-        onValueChange={(value:string)=>{setActiveLayer(value);console.log(value)}}
+        onValueChange={(value:string)=>{
+          if (value == 'default' || value == 'heatmap' || value == 'choropleth' || value == 'none'){
+            setActiveLayer(value);
+          } else {
+            setActiveLayer('default')
+          }
+          console.log('value', value)
+        }}
       />
     </>
   );

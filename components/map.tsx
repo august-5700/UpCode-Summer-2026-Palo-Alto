@@ -52,6 +52,11 @@ export default function Map({ onSelectCoords, onHover, center, activeLayer }: Ma
     const requestIdRef = useRef(0);
     const choroplethRef = useRef<L.GeoJSON | null>(null);
     const choroplethRequestIdRef = useRef(0);
+    const activeLayerRef = useRef(activeLayer);
+
+    useEffect(() => {
+        activeLayerRef.current = activeLayer;
+    }, [activeLayer]);
     
     const onSelectCoordsRef = useRef(onSelectCoords);
     const onHoverRef = useRef(onHover);
@@ -129,17 +134,20 @@ export default function Map({ onSelectCoords, onHover, center, activeLayer }: Ma
 
     function updateLayerVisibility() {
         if (!mapRef.current || !heatRef.current || !choroplethRef.current) return;
+        setLoading(true)
 
         const map = mapRef.current;
         const zoom = map.getZoom();
 
+        const layer = activeLayerRef.current;
+
         const showHeat =
-            activeLayer === "heatmap" ||
-            (activeLayer === "default" && zoom >= AUTO_SWITCH_ZOOM);
+            layer === "heatmap" ||
+            (layer === "default" && zoom >= AUTO_SWITCH_ZOOM);
 
         const showChoropleth =
-            activeLayer === "choropleth" ||
-            (activeLayer === "default" && zoom < AUTO_SWITCH_ZOOM);
+            layer === "choropleth" ||
+            (layer === "default" && zoom < AUTO_SWITCH_ZOOM);
         
         console.log('showheat', showHeat, 'showchr', showChoropleth)
 
@@ -160,6 +168,8 @@ export default function Map({ onSelectCoords, onHover, center, activeLayer }: Ma
                 map.removeLayer(choroplethRef.current!);
             }
         }
+
+        setLoading(false)
     }
 
     useEffect(() => {
@@ -188,10 +198,10 @@ export default function Map({ onSelectCoords, onHover, center, activeLayer }: Ma
             radius: 25,
             blur: 15,
             gradient: {
-                0.4: 'blue',
-                0.65: 'lime',
-                0.995: 'orange',
-                1.0: 'red'
+                0.4: 'red',
+                0.65: 'orange',
+                0.995: 'lime',
+                1.0: 'green'
             }
         }).addTo(map);
 
@@ -315,6 +325,10 @@ export default function Map({ onSelectCoords, onHover, center, activeLayer }: Ma
         }
         // refresh(mapRef.current, heatRef.current)
     }, [center]);
+
+    useEffect(() => {
+        console.log("Map mounted");
+    }, []);
 
     useEffect(() => {
         updateLayerVisibility();

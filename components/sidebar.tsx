@@ -9,7 +9,7 @@ const ICONS = { home: Home, dollar: DollarSign, building: Building2 } as const;
 
 export default function Sidebar({ data, onClose }: { data: TractData; onClose: () => void }) {
   return (
-    <Card className="absolute right-4 top-4 bottom-4 z-[1000] flex w-[420px] flex-col gap-6 overflow-y-auto rounded-3xl border border-white/40 bg-white/50 p-8 shadow-2xl backdrop-blur-2xl backdrop-saturate-150">
+    <Card className="absolute right-4 top-4 bottom-4 z-[1000] flex w-80 flex-col gap-6 overflow-y-auto rounded-3xl border border-white/40 bg-white/50 p-8 shadow-2xl backdrop-blur-2xl backdrop-saturate-150">
       {/* Header */}
       <div className="flex items-start justify-between">
         <h2 className="text-2xl font-bold tracking-tight text-gray-900">{data.title}</h2>
