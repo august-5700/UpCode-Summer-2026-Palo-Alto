@@ -8,6 +8,7 @@ import getCounties, { getTractByCoords, getCountyByCoords, type TractData } from
 import { Search } from "./search";
 import { Filters } from "./filters";
 import { LatLngTuple } from "leaflet";
+import { LayersToggle } from "./layer-toggle";
 
 type Hover = { block: any; x: number; y: number; countyName: string | null } | null;
 
@@ -23,6 +24,9 @@ export default function MapView() {
       bbox: [number, number, number, number];
   }>();
 
+const [activeLayer, setActiveLayer] = useState<
+  "default" | "heatmap" | "choropleth" | "none"
+>("default");
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const anchorRef = useRef<{ x: number; y: number } | null>(null);
@@ -73,12 +77,14 @@ export default function MapView() {
 
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
+
   return (
     <>
       <Map 
         onSelectCoords={(lat, lng, level) => handleSelect(lat, lng, level)}
         onHover={handleHover} 
         center={mapCenter}
+        activeLayer={activeLayer}
       />
       {tract && <Sidebar data={tract} onClose={() => setTract(null)} />}
       {hover && <MapTooltip block={hover.block} x={hover.x} y={hover.y} countyName={hover.countyName} />}
@@ -87,6 +93,17 @@ export default function MapView() {
         setMapCenter({lat: lat, lng: lng, bbox: bbox})
         }}/>
       <Filters />
+      <LayersToggle
+        value={activeLayer}
+        onValueChange={(value:string)=>{
+          if (value == 'default' || value == 'heatmap' || value == 'choropleth' || value == 'none'){
+            setActiveLayer(value);
+          } else {
+            setActiveLayer('default')
+          }
+          console.log('value', value)
+        }}
+      />
     </>
   );
 }

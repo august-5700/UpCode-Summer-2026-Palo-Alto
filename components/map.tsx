@@ -1,7 +1,7 @@
 'use client';
 
 import { use, useEffect, useRef, useState } from 'react';
-import L, { LatLngTuple, HeatLatLngTuple, Map as MapType, HeatLayer } from 'leaflet';
+import L, { LatLngTuple, HeatLatLngTuple, Map as MapType, HeatLayer, Layer } from 'leaflet';
 import 'leaflet.heat';
 import { rankNormalize } from '@/utils/normalize';
 
@@ -9,21 +9,28 @@ import 'leaflet/dist/leaflet.css';
 import { heatRadiusForZoom } from '@/utils/heatRadius';
 
 import { pixelRadius } from '@/utils/convertToMeters';
-import getCounties, { getBlocks, getBlocksWithinRange, getGeoJsonByCounty} from '@/utils/api'
+import getCounties, { getBlocksWithinRange} from '@/utils/api'
 import { combinePoints } from '@/utils/combinePoints';
 import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
 import { attachData, attachWeightedData } from '@/utils/attachDataFast';
 import { computeHeatSimple } from '@/utils/score';
+import { renderCountyChoropleth, valueToHex } from '@/utils/renderCountyChoropleth';
+import TestListingsModal from '@/components/test-listings-modal'
+
+
 
 interface MapProps {
-    onSelectCoords: (lat: number, lng: number, level: 'county' | 'block') => void;
+    onSelectCoords: (lat: number, lng: number, level: "county" | "block") => void;
     onHover: (block: any | null, x: number, y: number) => void;
     center?: {
         lat: number;
         lng: number;
         bbox: [number, number, number, number];
     };
+    activeLayer: string;
 }
+
+
 
 
 const maxZoom = 15;
@@ -42,13 +49,20 @@ const toHeatTuples = (points: any[]): HeatLatLngTuple[] => {
 };
 
 
-export default function Map({ onSelectCoords, onHover, center }: MapProps) {
+export default function Map({ onSelectCoords, onHover, center, activeLayer }: MapProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const pointsRef = useRef<any[]>([]);
     const mapRef = useRef<L.Map | null>(null);
     const heatRef = useRef<any>(null);
     const requestIdRef = useRef(0);
+    const choroplethRef = useRef<L.GeoJSON | null>(null);
+    const choroplethRequestIdRef = useRef(0);
+    const activeLayerRef = useRef(activeLayer);
 
+    useEffect(() => {
+        activeLayerRef.current = activeLayer;
+    }, [activeLayer]);
+    
     const onSelectCoordsRef = useRef(onSelectCoords);
     const onHoverRef = useRef(onHover);
     useEffect(() => {
@@ -57,26 +71,24 @@ export default function Map({ onSelectCoords, onHover, center }: MapProps) {
     }, [onSelectCoords, onHover]);
 
     const [loading, setLoading] = useState(true);
+    const [showTest, setShowTest] = useState(false);
 
     // Single refresh function, all changes happen here
     // Calls when first initialized and when any movement happens, zoom/drag
     const refresh = async (map: MapType, heat: HeatLayer) => {
 
-            // Creates request id for the called refresh function
-            // Different id for each refresh call
-            const requestId = ++requestIdRef.current;
-            
-            // Grabs zoom and bounds
-            const zoom = map.getZoom();
-            if(zoom < minZoom) heatRef.current.setOptions({ zoom: minZoom });return;
-            const bounds = map.getBounds()
-
-    
+        // Creates request id for the called refresh function
+        // Different id for each refresh call
+        const requestId = ++requestIdRef.current;
+        
+        // Grabs zoom and bounds
+        const zoom = map.getZoom();
+        // if(zoom < minZoom) heatRef.current.setOptions({ zoom: minZoom });return;
+        const bounds = map.getBounds()
 
         //padded bounds
         const padBounds = bounds.pad(1.0)
-        
-
+    
         // If the zoom is past the threshold the raw data is grabbed from blocks dataset
         // Otherwise its grabbed from counties dataset
         
@@ -115,6 +127,7 @@ export default function Map({ onSelectCoords, onHover, center }: MapProps) {
 
         // Updating the radius and blur
         const r = heatRadiusForZoom(map, gridSpacing);
+        if (!heatRef.current._map) return;
         heatRef.current.setOptions({ radius: r, blur: r , maxZoom: zoom});
 
         // Updating the grid of heat points
@@ -122,6 +135,48 @@ export default function Map({ onSelectCoords, onHover, center }: MapProps) {
 
         setLoading(false);
     };
+
+    const AUTO_SWITCH_ZOOM = 11;
+
+    function updateLayerVisibility() {
+        if (!mapRef.current || !heatRef.current || !choroplethRef.current) return;
+        setLoading(true)
+
+        const map = mapRef.current;
+        const zoom = map.getZoom();
+
+        const layer = activeLayerRef.current;
+
+        const showHeat =
+            layer === "heatmap" ||
+            (layer === "default" && zoom >= AUTO_SWITCH_ZOOM);
+
+        const showChoropleth =
+            layer === "choropleth" ||
+            (layer === "default" && zoom < AUTO_SWITCH_ZOOM);
+        
+        console.log('showheat', showHeat, 'showchr', showChoropleth)
+
+        if (showHeat) {
+            if (!map.hasLayer(heatRef.current))
+                heatRef.current.addTo(map);
+        } else {
+            if (map.hasLayer(heatRef.current))
+                map.removeLayer(heatRef.current);
+        }
+
+        if (showChoropleth) {
+            if (!map.hasLayer(choroplethRef.current!)) {
+                choroplethRef.current!.addTo(map);
+            }
+        } else {
+            if (map.hasLayer(choroplethRef.current!)) {
+                map.removeLayer(choroplethRef.current!);
+            }
+        }
+
+        setLoading(false)
+    }
 
     useEffect(() => {
         console.log("Map useEffect started");
@@ -158,28 +213,58 @@ export default function Map({ onSelectCoords, onHover, center }: MapProps) {
             radius: 25,
             blur: 15,
             gradient: {
-                0.25: '#660000',
-                0.60: '#90EE90',
-                0.80: '#90EE90',
+                0.4: 'red',
+                0.65: 'orange',
+                0.995: 'lime',
                 1.0: 'green'
             }
         }).addTo(map);
 
         heatRef.current = heat;
+        
+        async function loadChoropleth() {
+            const requestId = ++choroplethRequestIdRef.current;
 
-        async function loadGeoJson() {
-            console.log('loading geojson')
-            const geojson = await getGeoJsonByCounty("01", "001");
+            const counties = await getCounties();
 
-            if (!mapRef.current) return;
+            const layer = await renderCountyChoropleth((feature) => {
+                if (!feature.properties){
+                    console.log('no properties')
+                    return "#ffffff";
+                }
+                    
+                const county = counties.filter((county: any)=>county.name == feature.properties?.NAME && county.state_fip == feature.properties?.STATEFP)[0]
 
-            const layers = geojson.features.map((f:any)=>L.geoJSON(f));
+                if (!county){
+                    console.log('no county')
+                    return "#ffffff";
+                }
+                    
 
-            // layers.addTo(mapRef.current);
+                return valueToHex(
+                    (county.median_gross_rent ?? -1) /
+                    (county.median_home_value ?? -1),
+                    0,
+                    0.0075,
+                    "#ff0000",
+                    "#00ff00"
+                );
+            });
 
-            console.log("Successfully added geojson");
+            // Ignore stale result
+            if (
+                requestId !== choroplethRequestIdRef.current ||
+                !mapRef.current
+            ) {
+                return;
+            }
+
+            choroplethRef.current = layer;
+
+            updateLayerVisibility();
         }
-        loadGeoJson()
+        loadChoropleth()
+        console.log("Creating choropleth");
         
         // Listener for when user clicks, grabs user's latitude and longitude
         map.on("click", (e: L.LeafletMouseEvent) => {
@@ -212,17 +297,21 @@ export default function Map({ onSelectCoords, onHover, center }: MapProps) {
         map.on("mouseout", () => onHover(null, 0, 0));
 
         // Checks if the user moves, zoom/drag, if so calls the refresh function
-        map.on('moveend', () => refresh(map, heat));
+        map.on('moveend', () => {updateLayerVisibility();refresh(map, heat)});
 
         // After all the initializing is finished calls refresh
         refresh(map, heat);
 
         // Cleanup function
         return () => {
+            choroplethRequestIdRef.current++;
             requestIdRef.current++;
+
             map.remove();
+
             mapRef.current = null;
             heatRef.current = null;
+            choroplethRef.current = null;
         };
     }, []);
 
@@ -252,6 +341,14 @@ export default function Map({ onSelectCoords, onHover, center }: MapProps) {
         // refresh(mapRef.current, heatRef.current)
     }, [center]);
 
+    useEffect(() => {
+        console.log("Map mounted");
+    }, []);
+
+    useEffect(() => {
+        updateLayerVisibility();
+    }, [activeLayer]);
+
 return (
     <div className="relative w-screen h-screen overflow-hidden">
 
@@ -260,6 +357,13 @@ return (
                 Loading map...
             </div>
         )}
+
+        <button
+            onClick={() => setShowTest(true)}
+            className="absolute left-4 top-4 z-[1000] rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-lg hover:bg-emerald-700"
+        >
+            Test listings
+        </button>
 
         <div
             ref={containerRef}
@@ -271,6 +375,8 @@ return (
                 top: '-50vh',
             }}
         />
+
+        {showTest && <TestListingsModal onClose={() => setShowTest(false)} />}
     </div>
     );
 }

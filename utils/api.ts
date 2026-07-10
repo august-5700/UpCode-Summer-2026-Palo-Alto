@@ -272,15 +272,3 @@ export async function getResultFromAddressAutocomplete(input: String, bias: LatL
 export function wrapper(func:any){
   return func()
 }
-
-export async function getGeoJsonByCounty(stateFIP:string, countyFIP:string) {
-  const url = `https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_ACS2024/MapServer/8/query?where=STATE%3D%27${stateFIP}%27%20AND%20COUNTY%3D%27${countyFIP}%27&outFields=GEOID,NAME,STATE,COUNTY,TRACT,CENTLAT,CENTLON,INTPTLAT,INTPTLON&returnGeometry=true&outSR=4326&f=geojson`
-  console.log(url)
-  const res = await fetch(url, requestOptions)
-  
-  if (!res.ok) {
-    throw new Error("Response failed with status " + res.status);
-  }
-  const json = await res.json()
-  return json
-}
