@@ -15,6 +15,9 @@ import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
 import { attachData, attachWeightedData } from '@/utils/attachDataFast';
 import { computeHeatSimple } from '@/utils/score';
 import { renderCountyChoropleth, valueToHex } from '@/utils/renderCountyChoropleth';
+import TestListingsModal from '@/components/test-listings-modal'
+
+
 
 interface MapProps {
     onSelectCoords: (lat: number, lng: number, level: "county" | "block") => void;
@@ -26,6 +29,8 @@ interface MapProps {
     };
     activeLayer: string;
 }
+
+
 
 
 const maxZoom = 15;
@@ -61,6 +66,7 @@ export default function Map({ onSelectCoords, onHover, center, activeLayer }: Ma
     }, [onSelectCoords, onHover]);
 
     const [loading, setLoading] = useState(true);
+    const [showTest, setShowTest] = useState(false);
 
     // Single refresh function, all changes happen here
     // Calls when first initialized and when any movement happens, zoom/drag
@@ -329,6 +335,13 @@ return (
             </div>
         )}
 
+        <button
+            onClick={() => setShowTest(true)}
+            className="absolute left-4 top-4 z-[1000] rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-lg hover:bg-emerald-700"
+        >
+            Test listings
+        </button>
+
         <div
             ref={containerRef}
             className="absolute z-0"
@@ -339,6 +352,8 @@ return (
                 top: '-50vh',
             }}
         />
+
+        {showTest && <TestListingsModal onClose={() => setShowTest(false)} />}
     </div>
     );
 }
