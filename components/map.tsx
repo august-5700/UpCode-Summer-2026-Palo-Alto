@@ -49,12 +49,52 @@ const toHeatTuples = (points: any[]): HeatLatLngTuple[] => {
     return points.map((pt: any, i: number) => [pt.lat || 0, pt.long || 0, norm[i]]);
 };
 
+type PointLike = {
+    lat?: number;
+    latitude?: number;
+    long?: number;
+    lng?: number;
+    lon?: number;
+    [key: string]: any;
+};
+
+const renderMarkers = (
+    points: PointLike[],
+    map: MapType,
+    markerLayerRef: { current: L.LayerGroup | null }
+) => {
+    markerLayerRef.current?.clearLayers();
+
+    const layerGroup = L.layerGroup();
+
+    points.forEach((point) => {
+        const lat = point.lat ?? point.latitude;
+        const lng = point.long ?? point.lng ?? point.lon ?? point.longitude;
+
+        if (lat == null || lng == null) return;
+
+        layerGroup.addLayer(
+            L.circleMarker([lat, lng], {
+                radius: 3,
+                color: '#2563eb',
+                fillColor: '#60a5fa',
+                fillOpacity: 0.75,
+                weight: 1,
+            })
+        );
+    });
+
+    layerGroup.addTo(map);
+    markerLayerRef.current = layerGroup;
+};
+
 
 export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading, center, activeLayer }: MapProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const pointsRef = useRef<any[]>([]);
     const mapRef = useRef<L.Map | null>(null);
     const heatRef = useRef<any>(null);
+    const markerLayerRef = useRef<L.LayerGroup | null>(null);
     const requestIdRef = useRef(0);
     const choroplethRef = useRef<L.GeoJSON | null>(null);
     const choroplethRequestIdRef = useRef(0);
@@ -104,6 +144,7 @@ export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading,
 
         // Update pointsRef with the new raw data
         pointsRef.current = raw;
+        renderMarkers(raw, map, markerLayerRef);
 
         // Sorts raw data
         
@@ -166,7 +207,7 @@ export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading,
         if (showChoropleth) {
             if (!map.hasLayer(choroplethRef.current!)) {
                 choroplethRef.current!.addTo(map);
-            }
+            } 
         } else {
             if (map.hasLayer(choroplethRef.current!)) {
                 map.removeLayer(choroplethRef.current!);
@@ -254,7 +295,7 @@ export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading,
         }
         loadChoropleth()
         console.log("Creating choropleth");
-        
+
         // Listener for when user clicks, grabs user's latitude and longitude
         map.on("click", (e: L.LeafletMouseEvent) => {
             const level = map.getZoom() >= 11 ? 'block' : 'county';
@@ -301,6 +342,8 @@ export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading,
 
             map.remove();
 
+            markerLayerRef.current?.clearLayers();
+            markerLayerRef.current = null;
             mapRef.current = null;
             heatRef.current = null;
             choroplethRef.current = null;
