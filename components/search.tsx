@@ -18,11 +18,12 @@ import { useState } from "react";
 
 interface SearchProps {
         handleSubmit: (lat: number, lng: number, bbox:[number, number, number, number]) => void;
+        handleViewListings: (item: string[]) => void;
 }
 
 
 
-export function Search({handleSubmit}: SearchProps) {
+export function Search({handleSubmit, handleViewListings}: SearchProps) {
     // useEffect with empty dep to fetch tracts
     // onchange on the input leads to a function to update the top 5 results, which should use a useState
     // on enter or search or whatever, just pick the first one
@@ -52,7 +53,7 @@ export function Search({handleSubmit}: SearchProps) {
   return (
     <Combobox items={menu}>
         <ComboboxInput placeholder="Search for a county"
-        className='absolute top-4 left-6 z-1000
+        className='absolute top-4 left-6 z-100
         h-11 w-64 px-4
         rounded-full
         border border-white/40
@@ -70,17 +71,25 @@ export function Search({handleSubmit}: SearchProps) {
         }} 
     />
 
-      <ComboboxContent className='absolute top-3 -left-4 z-1000 w-64 rounded-2xl border border-white/40 bg-white/50 text-gray-900 shadow-xl backdrop-blur-2xl backdrop-saturate-150'>
+      <ComboboxContent className='absolute top-3 -left-4 z-100 w-64 rounded-2xl border border-white/40 bg-white/50 text-gray-900 shadow-xl backdrop-blur-2xl backdrop-saturate-150'>
         <ComboboxEmpty className='text-gray-900'>No items found.</ComboboxEmpty>
         <ComboboxList className='text-gray-900'>
           {(item: GeoData) => (
-            <ComboboxItem 
-              key={item.name} 
-              value={item.name} 
-              onClick={()=>handleSubmit(item.lat, item.lng, item.bbox)} 
-              className='rounded-xl'
+            <ComboboxItem
+              key={item.name}
+              value={item.name}
+              className="relative w-full items-center justify-between rounded-2xl p-4"
             >
-              {item.name}
+              <p className='absolute left-3' onClick={() => handleSubmit(item.lat, item.lng, item.bbox)}>
+                {item.name}
+              </p>
+
+              <button
+                onClick={() => handleViewListings(item.name.split(", "))}
+                className="absolute right-2! rounded-xl bg-black/5 px-3 py-0.5 text-[10px] border-blue-600 border font-semibold text-white! shadow-lg transition duration-300 hover:bg-blue-700 hover:scale-110"
+              >
+                Listings
+              </button>
             </ComboboxItem>
           )}
         </ComboboxList>
