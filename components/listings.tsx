@@ -8,6 +8,8 @@ import { getListings } from "@/utils/listings";
 import type { GetListingsResult, SaleListing } from "@/utils/listings.types";
 import { ListingFilter, prepareListings } from "@/utils/listings/prepareListings";
 import { scoreListing } from "@/utils/listings/listingScore";
+import { on } from "node:cluster";
+import { cn } from "@/lib/utils";
 
 const money = (v: number | null) => (v == null ? "—" : `$${Math.round(v).toLocaleString()}`);
 const percent = (v: number | null) => (v == null ? "—" : `${(v * 100).toFixed(2)}%`);
@@ -26,15 +28,11 @@ const netYield = (l: SaleListing): number | null => {
 };
 
 interface ListingsViewerProps {
-  onClose: () => void;
+  onListingSelect: (listing: SaleListing) => void;
   data: GetListingsResult;
 }
 
-export default function ListingsViewer({ onClose, data }: ListingsViewerProps) {
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export default function ListingsViewer({ onListingSelect, data }: ListingsViewerProps) {
   const [minPpsf, setMinPpsf] = useState("");
   const [maxPpsf, setMaxPpsf] = useState("");
 
@@ -113,7 +111,10 @@ export default function ListingsViewer({ onClose, data }: ListingsViewerProps) {
           {ranked.map((l: SaleListing) => (
             <div
               key={l.id}
-              className="rounded-2xl border border-white/50 bg-white/40 p-4 transition hover:bg-white/70"
+              className={cn("rounded-2xl border p-3 text-sm transition-all duration-150 hover:cursor-pointer",
+                l.selected ? "border-emerald-400 bg-emerald-100/40 hover:bg-emerald-100/50" : "border-white/50 bg-white/40 hover:bg-white/70"
+              )}
+              onClick={()=>{onListingSelect(l);ranked.forEach((l: SaleListing)=>l.selected = false);l.selected = !l.selected}}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">

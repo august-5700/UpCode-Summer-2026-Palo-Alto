@@ -6,8 +6,10 @@ type GeoData = {
     bbox: [number, number, number, number];
 }
 
-type Point = {
+type MarkerType = {
     lat?: number | null;
     lng?: number | null;
+    address: string | null;
+    highlighted: true | false;
     [key: string]: any;
 };

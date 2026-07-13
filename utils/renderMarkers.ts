@@ -1,8 +1,12 @@
 import L from "leaflet";
 import { Map as MapType } from "leaflet";
 
+const defaultColor = "#2563eb";
+const defaultFillColor = "#60a5fa";
+const highlightedFillColor = "#facc15";
+
 export const renderMarkers = (
-    points: Point[],
+    points: MarkerType[],
     map: MapType,
     markerLayerRef: { current: L.LayerGroup | null }
 ) => {
@@ -19,14 +23,34 @@ export const renderMarkers = (
     for (const point of points) {
         if (point.lat == null || point.lng == null) continue;
 
-        layer.addLayer(
+        if (point.highlighted) {
+            layer.addLayer(
+                L.marker([point.lat, point.lng], {
+                    icon: L.divIcon({
+                    className: "",
+                    html: `
+                        <img
+                        src="/map-pin.svg"
+                        width="24"
+                        height="24"
+                        draggable="false"
+                        />
+                    `,
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 24],
+                    }),
+                })
+            );
+        } else {
+            layer.addLayer(
             L.circleMarker([point.lat, point.lng], {
-                radius: 3,
-                color: "#2563eb",
-                fillColor: "#60a5fa",
+                radius: 4,
+                color: defaultColor,
+                fillColor: defaultFillColor,
                 fillOpacity: 0.75,
                 weight: 1,
             })
-        );
+            );
+        }
     }
 };

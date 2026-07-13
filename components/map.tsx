@@ -30,13 +30,13 @@ interface MapProps {
         bbox: [number, number, number, number];
     };
     activeLayer: string;
-    markerPoints: Point[];
+    markerPoints: MarkerType[];
 }
 
 
 
 
-const maxZoom = 15;
+const maxZoom = 18;
 const minZoom = 2;
 const blockThreshold = 11;
 const subDivisions = 95;
@@ -66,7 +66,7 @@ export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading,
     const choroplethRef = useRef<L.GeoJSON | null>(null);
     const choroplethRequestIdRef = useRef(0);
     
-    const markerPointsRef = useRef<Point[]>([]);
+    const markerPointsRef = useRef<MarkerType[]>([]);
     useEffect(() => {
         markerPointsRef.current = markerPoints;
         renderMarkers(markerPoints, mapRef.current!, markerLayerRef);
