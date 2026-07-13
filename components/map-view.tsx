@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Map from "./map";
 import Sidebar from "./sidebar";
 import MapTooltip from "./map-tooltip";
+import Comparison from "./comparison";
 import getCounties, { getTractByCoords, getCountyByCoords, type TractData } from "@/utils/api";
 import { Search } from "./search";
 import { Filters } from "./filters";
@@ -93,6 +94,7 @@ const [activeLayer, setActiveLayer] = useState<
         setMapCenter({lat: lat, lng: lng, bbox: bbox})
         }}/>
       <Filters />
+      {/* <Comparison /> */}
       <LayersToggle
         value={activeLayer}
         onValueChange={(value:string)=>{
