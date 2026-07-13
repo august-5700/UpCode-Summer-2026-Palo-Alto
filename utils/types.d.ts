@@ -5,3 +5,9 @@ type GeoData = {
     county: string;
     bbox: [number, number, number, number];
 }
+
+type Point = {
+    lat?: number | null;
+    lng?: number | null;
+    [key: string]: any;
+};

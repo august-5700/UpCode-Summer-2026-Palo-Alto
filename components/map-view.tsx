@@ -13,6 +13,7 @@ import PropertyListingsSidebar from "./listings";
 import { cn } from "@/lib/utils";
 import { getListings } from "@/utils/listings";
 import { GetListingsResult } from "@/utils/listings.types";
+import { renderMarkers } from "@/utils/renderMarkers";
 
 type Hover = { block: any; x: number; y: number; countyName: string | null } | null;
 
@@ -33,7 +34,7 @@ export default function MapView() {
   const [sidebarValue, setSidebarValue] = useState<SidebarValue>(null);
   const [enableListingsButton, setEnableListingButton] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
-
+  const [markerPoints, setMarkerPoints] = useState<Point[]>([]);
 
 
   const [activeLayer, setActiveLayer] = useState<
@@ -95,6 +96,10 @@ export default function MapView() {
       // Call the server action directly — small caps keep testing frugal.
       setLoading(true)
       const data = await getListings(item[0], item[1], 2000, 1500);
+      setMarkerPoints(data.listings.map((listing) => ({
+        lat: listing.latitude,
+        lng: listing.longitude,
+      })));
       setListingData(data);
     } catch (err) {
       console.log(err instanceof Error ? err.message : "Something went wrong");
@@ -122,6 +127,7 @@ export default function MapView() {
         setLoading={setLoading}
         center={mapCenter}
         activeLayer={activeLayer}
+        markerPoints={markerPoints}
       />
       {(() => {
         switch (sidebarValue) {
