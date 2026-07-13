@@ -9,7 +9,7 @@ import { Search } from "./search";
 import { Filters } from "./filters";
 import { LatLngTuple } from "leaflet";
 import { LayersToggle } from "./layer-toggle";
-import PropertyListingsSidebar from "./test-listings-modal";
+import PropertyListingsSidebar from "./listings";
 import { cn } from "@/lib/utils";
 import { getListings } from "@/utils/listings";
 import { GetListingsResult } from "@/utils/listings.types";

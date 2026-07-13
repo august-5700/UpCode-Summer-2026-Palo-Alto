@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import type { TractData } from "@/utils/api";
 import RegionalOverview from "./regional-overview";
 import RegionalDetails from "./regional-details";
-import TestListingsModal from "./test-listings-modal";
 import { GetListingsResult } from "@/utils/listings.types";
+import ListingsViewer from "./listings";
 
 interface SidebarProps {
   title?: string;
@@ -42,7 +42,7 @@ export default function Sidebar({ title, regionalData, listingData, onClose }: S
       )}
 
       {listingData && (
-        <TestListingsModal data={listingData} onClose={onClose} />
+        <ListingsViewer data={listingData} onClose={onClose} />
       )}
 
 

@@ -28,7 +28,7 @@ interface ListingsViewerProps {
   data: GetListingsResult;
 }
 
-export default function TestListingsModal({ onClose, data }: ListingsViewerProps) {
+export default function ListingsViewer({ onClose, data }: ListingsViewerProps) {
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [loading, setLoading] = useState(false);
