@@ -181,8 +181,8 @@ export default function MapView() {
         }}
       />
       <button
-        // onClick={() => {if (enableListingsButton)setSidebarValue('listings')}}
-        onClick={() => {setSidebarValue('listings')}} // always enabled for testing purposes. uncomment above line when done
+        onClick={() => {if (enableListingsButton)setSidebarValue('listings')}}
+        // onClick={() => {setSidebarValue('listings')}} // always enabled for testing purposes. uncomment above line when done
         className={cn("absolute right-4 bottom-4 z-100 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-lg  transition duration-300"
         ,enableListingsButton ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-600 hover:bg-blue-700' )}
       >
