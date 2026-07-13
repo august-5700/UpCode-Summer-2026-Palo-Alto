@@ -4,29 +4,41 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Map from "./map";
 import Sidebar from "./sidebar";
 import MapTooltip from "./map-tooltip";
-import getCounties, { getTractByCoords, getCountyByCoords, type TractData } from "@/utils/api";
+import getCounties, { getCountyByCoords, type TractData, getBlockByCoords } from "@/utils/api";
 import { Search } from "./search";
 import { Filters } from "./filters";
 import { LatLngTuple } from "leaflet";
 import { LayersToggle } from "./layer-toggle";
+import PropertyListingsSidebar from "./listings";
+import { cn } from "@/lib/utils";
+import { getListings } from "@/utils/listings";
+import { GetListingsResult } from "@/utils/listings.types";
 
 type Hover = { block: any; x: number; y: number; countyName: string | null } | null;
 
 const HOVER_DELAY = 1000; // ms of stillness before the tooltip shows
 const MOVE_THRESHOLD = 10; // px, moves smaller than this count as still (ignores jitter)
 
+type SidebarValue = null | 'block' | 'county' | 'listings'
+
 export default function MapView() {
-  const [tract, setTract] = useState<TractData | null>(null);
+  const [regionalData, setRegionalData] = useState<TractData | null>(null);
+  const [listingData, setListingData] = useState<GetListingsResult | null>(null)
   const [hover, setHover] = useState<Hover>(null);
   const [mapCenter, setMapCenter] = useState<{
       lat: number;
       lng: number;
       bbox: [number, number, number, number];
   }>();
+  const [sidebarValue, setSidebarValue] = useState<SidebarValue>(null);
+  const [enableListingsButton, setEnableListingButton] = useState<boolean>(false);
+  const [loading, setLoading] = useState(true);
 
-const [activeLayer, setActiveLayer] = useState<
-  "default" | "heatmap" | "choropleth" | "none"
->("default");
+
+
+  const [activeLayer, setActiveLayer] = useState<
+    "default" | "heatmap" | "choropleth" | "none"
+  >("default");
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const anchorRef = useRef<{ x: number; y: number } | null>(null);
@@ -43,8 +55,9 @@ const [activeLayer, setActiveLayer] = useState<
   }, []);
 
   const handleSelect = useCallback(async (lat: number, lng: number, level: "county" | "block") => {
-    const data = level === "block" ? await getTractByCoords(lat, lng) : await getCountyByCoords(lat, lng);
-    setTract(data);
+    const data = level === "block" ? await getBlockByCoords(lat, lng) : await getCountyByCoords(lat, lng);
+    setRegionalData(data);
+    setSidebarValue('block')
   }, []);
 
   const handleHover = useCallback((block: any | null, x: number, y: number) => {
@@ -75,23 +88,86 @@ const [activeLayer, setActiveLayer] = useState<
     timerRef.current = setTimeout(() => setHover(latestRef.current), HOVER_DELAY);
   }, []);
 
+  async function viewListings(item: string[]) {
+    if (item.length !== 2) return;
+
+    try {
+      // Call the server action directly — small caps keep testing frugal.
+      setLoading(true)
+      const data = await getListings(item[0], item[1], 2000, 1500);
+      setListingData(data);
+    } catch (err) {
+      console.log(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
 
   return (
     <>
+      {loading && (
+        <div className=" z-1000 absolute inset-0 flex items-center text-white justify-center bg-black">
+          Loading...
+        </div>
+      )}
       <Map 
         onSelectCoords={(lat, lng, level) => handleSelect(lat, lng, level)}
         onHover={handleHover} 
+        onZoomChange={(zoom: number) => {
+          setEnableListingButton(zoom > 11 ? true : false)
+        }}
+        setLoading={setLoading}
         center={mapCenter}
         activeLayer={activeLayer}
       />
-      {tract && <Sidebar data={tract} onClose={() => setTract(null)} />}
+      {(() => {
+        switch (sidebarValue) {
+          case "block":
+            return regionalData ? (
+              <Sidebar
+                title={regionalData.title}
+                regionalData={regionalData}
+                onClose={() => {setRegionalData(null);setSidebarValue(null)}}
+              />
+            ) : null;
+
+          case "county":
+            return regionalData ? (
+              <Sidebar
+                title={regionalData.title}
+                regionalData={regionalData}
+                onClose={() => {setRegionalData(null);setSidebarValue(null)}}
+              />
+            ) : null;
+
+          case "listings":
+            return listingData ? (
+              <Sidebar
+                listingData={listingData}
+                onClose={() => {setRegionalData(null);setSidebarValue(null)}}
+              />
+            ) : null;
+
+          default:
+            return null;
+        }
+      })()}
+      
       {hover && <MapTooltip block={hover.block} x={hover.x} y={hover.y} countyName={hover.countyName} />}
-      <Search handleSubmit={(lat, lng, bbox) => {
-        handleSelect(lat, lng, 'county')
-        setMapCenter({lat: lat, lng: lng, bbox: bbox})
-        }}/>
+      <Search 
+        handleSubmit={(lat, lng, bbox) => {
+          handleSelect(lat, lng, 'county')
+          setMapCenter({lat: lat, lng: lng, bbox: bbox})
+        }}
+        handleViewListings={(item) => {
+          console.log('viewing listings')
+          setSidebarValue('listings')
+          viewListings(item)
+        }}
+      />
       <Filters />
       <LayersToggle
         value={activeLayer}
@@ -104,6 +180,14 @@ const [activeLayer, setActiveLayer] = useState<
           console.log('value', value)
         }}
       />
+      <button
+        onClick={() => {if (enableListingsButton)setSidebarValue('listings')}}
+        // onClick={() => {setSidebarValue('listings')}} // always enabled for testing purposes. uncomment above line when done
+        className={cn("absolute right-4 bottom-4 z-100 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-lg  transition duration-300"
+        ,enableListingsButton ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-600 hover:bg-blue-700' )}
+      >
+        View Listings
+      </button>
     </>
   );
 }

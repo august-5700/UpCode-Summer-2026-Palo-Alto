@@ -17,7 +17,7 @@ export default function Filters() {
       {/* Panel — expands out from behind the button when open. Header is
           flush to the top so its title lines up with the fixed button. */}
       {open && (
-        <div className="absolute top-4 left-72 z-[1000] w-80 overflow-hidden rounded-3xl border border-white/40 bg-white/50 shadow-2xl backdrop-blur-2xl backdrop-saturate-150">
+        <div className="absolute top-4 left-72 z-100 w-80 overflow-hidden rounded-3xl border border-white/40 bg-white/50 shadow-2xl backdrop-blur-2xl backdrop-saturate-150">
           <div className="flex h-11 items-center pl-16 pr-4">
             <p className="text-sm font-semibold text-gray-800">Filter (by minimum)</p>
           </div>
@@ -36,7 +36,7 @@ export default function Filters() {
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="absolute top-4 left-72 z-[1001] flex h-11 w-11 items-center justify-center rounded-full border border-white/40 bg-white/50 shadow-lg backdrop-blur-2xl backdrop-saturate-150 transition hover:bg-white/70"
+        className="absolute top-4 left-72 z-101 flex h-11 w-11 items-center justify-center rounded-full border border-white/40 bg-white/50 shadow-lg backdrop-blur-2xl backdrop-saturate-150 transition hover:bg-white/70"
       >
         <Filter className="h-5 w-5 text-gray-800" />
       </button>

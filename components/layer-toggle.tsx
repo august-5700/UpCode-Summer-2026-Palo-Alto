@@ -14,7 +14,7 @@ interface LayersToggleProps {
 export function LayersToggle({value, onValueChange}: LayersToggleProps) {
   return (
 
-    <RadioGroup value={value} onValueChange={onValueChange} className="w-fit absolute bottom-4 left-6 z-1000
+    <RadioGroup value={value} onValueChange={onValueChange} className="w-fit absolute bottom-4 left-6 z-100
         rounded-full
         border border-white/40
         bg-white/50 backdrop-blur-2xl backdrop-saturate-150
@@ -39,7 +39,7 @@ export function LayersToggle({value, onValueChange}: LayersToggleProps) {
                     <XOctagon className="size-4" />
                 </RadioGroupItem>
             </TooltipTrigger>
-            <TooltipContent side='right' className='z-1000 bg-white text-gray-800'>
+            <TooltipContent side='right' className='z-100 bg-white text-gray-800'>
                 <p>No Overlay</p>
             </TooltipContent>
         </Tooltip>
@@ -59,7 +59,7 @@ export function LayersToggle({value, onValueChange}: LayersToggleProps) {
                     <Flame className="size-4" />
                 </RadioGroupItem>
             </TooltipTrigger>
-            <TooltipContent side='right' className='z-1000 bg-white text-black'>
+            <TooltipContent side='right' className='z-100 bg-white text-black'>
                 <p>Heatmap Overlay</p>
                 <Popover>
                     <PopoverTrigger>
@@ -92,7 +92,7 @@ export function LayersToggle({value, onValueChange}: LayersToggleProps) {
                     <Grid3X3 className="size-4" />
                 </RadioGroupItem>
             </TooltipTrigger>
-            <TooltipContent side='right' className='z-1000 bg-white text-gray-800'>
+            <TooltipContent side='right' className='z-100 bg-white text-gray-800'>
                 <p>Choropleth Overlay</p>
                 <Popover>
                     <PopoverTrigger>
@@ -125,7 +125,7 @@ export function LayersToggle({value, onValueChange}: LayersToggleProps) {
                     <Map className="size-4" />
                 </RadioGroupItem>
             </TooltipTrigger>
-            <TooltipContent side='right' className='z-1000 bg-white text-gray-800'>
+            <TooltipContent side='right' className='z-100 bg-white text-gray-800'>
                 <p>Default Overlay</p>
                 <Popover>
                     <PopoverTrigger>
