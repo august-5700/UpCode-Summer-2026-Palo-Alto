@@ -13,9 +13,10 @@ import { LayersToggle } from "./layer-toggle";
 import PropertyListingsSidebar from "./listings";
 import { cn } from "@/lib/utils";
 import { getListings, getListingsInArea } from "@/utils/listings";
-import { GetListingsResult } from "@/utils/listings.types";
+import { GetListingsResult, SaleListing } from "@/utils/listings.types";
 import citySearch from "@/utils/citySearch";
 import L from "leaflet";
+import { renderMarkers } from "@/utils/renderMarkers";
 
 type Hover = { block: any; x: number; y: number; countyName: string | null } | null;
 
@@ -37,7 +38,7 @@ export default function MapView() {
   const [sidebarValue, setSidebarValue] = useState<SidebarValue>(null);
   const [enableListingsButton, setEnableListingButton] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
-
+  const [markerPoints, setMarkerPoints] = useState<MarkerType[]>([]);
 
 
   const [activeLayer, setActiveLayer] = useState<
@@ -111,6 +112,16 @@ export default function MapView() {
     timerRef.current = setTimeout(() => setHover(latestRef.current), HOVER_DELAY);
   }, []);
 
+  const handleListingSelect = useCallback((listing: SaleListing) => {
+    console.log('listing selected', listing)
+    setMarkerPoints(prev =>
+      prev.map(marker => ({
+        ...marker,
+        highlighted: marker.address === listing.address
+      }))
+    );
+  }, []);
+
   async function viewListings(item: string[]) {
     if (item.length !== 2) return;
 
@@ -118,6 +129,15 @@ export default function MapView() {
       // Call the server action directly — small caps keep testing frugal.
       setLoading(true)
       const data = await getListings(item[0], item[1], 2000, 1500);
+      console.log('viewlistings function', markerPoints)
+      setMarkerPoints(data.listings.map((listing: SaleListing) => {
+        return {
+          lat: listing.latitude,
+          lng: listing.longitude,
+          address: listing.address,
+          highlighted: false
+        }
+      }));
       setListingData(data);
     } catch (err) {
       console.log(err instanceof Error ? err.message : "Something went wrong");
@@ -146,6 +166,7 @@ export default function MapView() {
         center={mapCenter}
         activeLayer={activeLayer}
         setMapBounds = {setMapBounds}
+        markerPoints={markerPoints}
       />
       {(() => {
         switch (sidebarValue) {
@@ -172,6 +193,7 @@ export default function MapView() {
               <Sidebar
                 listingData={listingData}
                 onClose={() => {setRegionalData(null);setSidebarValue(null)}}
+                onListingSelect={(listing: SaleListing) => handleListingSelect(listing)}
               />
             ) : null;
 

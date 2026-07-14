@@ -15,8 +15,13 @@ import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
 import { attachData, attachWeightedData } from '@/utils/attachDataFast';
 import { computeHeatSimple } from '@/utils/score';
 import { renderCountyChoropleth, valueToHex } from '@/utils/renderCountyChoropleth';
+<<<<<<< HEAD
 import citySearch from '@/utils/citySearch'
 import { getListings } from '@/utils/listings';
+=======
+import { renderMarkers } from '@/utils/renderMarkers';
+
+>>>>>>> cd059f4e56692bed64ac2b45d507faaecfd0b100
 
 
 interface MapProps {
@@ -30,13 +35,17 @@ interface MapProps {
         bbox: [number, number, number, number];
     };
     activeLayer: string;
+<<<<<<< HEAD
     setMapBounds: Dispatch<SetStateAction<L.LatLngBounds>>
+=======
+    markerPoints: MarkerType[];
+>>>>>>> cd059f4e56692bed64ac2b45d507faaecfd0b100
 }
 
 
 
 
-const maxZoom = 15;
+const maxZoom = 18;
 const minZoom = 2;
 const blockThreshold = 11;
 const subDivisions = 95;
@@ -51,57 +60,32 @@ const toHeatTuples = (points: any[]): HeatLatLngTuple[] => {
     return points.map((pt: any, i: number) => [pt.lat || 0, pt.long || 0, norm[i]]);
 };
 
-type PointLike = {
-    lat?: number;
-    latitude?: number;
-    long?: number;
-    lng?: number;
-    lon?: number;
-    [key: string]: any;
-};
-
-const renderMarkers = (
-    points: PointLike[],
-    map: MapType,
-    markerLayerRef: { current: L.LayerGroup | null }
-) => {
-    markerLayerRef.current?.clearLayers();
-
-    const layerGroup = L.layerGroup();
-
-    points.forEach((point) => {
-        const lat = point.lat ?? point.latitude;
-        const lng = point.long ?? point.lng ?? point.lon ?? point.longitude;
-
-        if (lat == null || lng == null) return;
-
-        layerGroup.addLayer(
-            L.circleMarker([lat, lng], {
-                radius: 3,
-                color: '#2563eb',
-                fillColor: '#60a5fa',
-                fillOpacity: 0.75,
-                weight: 1,
-            })
-        );
-    });
-
-    layerGroup.addTo(map);
-    markerLayerRef.current = layerGroup;
-};
 
 
+<<<<<<< HEAD
 export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading, center, activeLayer, setMapBounds}: MapProps) {
+=======
+
+
+
+export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading, center, activeLayer, markerPoints }: MapProps) {
+>>>>>>> cd059f4e56692bed64ac2b45d507faaecfd0b100
     const containerRef = useRef<HTMLDivElement>(null);
-    const pointsRef = useRef<any[]>([]);
+    const heatPointsRef = useRef<any[]>([]);
     const mapRef = useRef<L.Map | null>(null);
     const heatRef = useRef<any>(null);
     const markerLayerRef = useRef<L.LayerGroup | null>(null);
     const requestIdRef = useRef(0);
     const choroplethRef = useRef<L.GeoJSON | null>(null);
     const choroplethRequestIdRef = useRef(0);
+    
+    const markerPointsRef = useRef<MarkerType[]>([]);
+    useEffect(() => {
+        markerPointsRef.current = markerPoints;
+        renderMarkers(markerPoints, mapRef.current!, markerLayerRef);
+    }, [markerPoints]);
+    
     const activeLayerRef = useRef(activeLayer);
-
     useEffect(() => {
         activeLayerRef.current = activeLayer;
     }, [activeLayer]);
@@ -142,11 +126,6 @@ export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading,
         
         // Checks if the requestId is current and that there is a map
         if(requestId !== requestIdRef.current || !mapRef.current) return;
-
-
-        // Update pointsRef with the new raw data
-        pointsRef.current = raw;
-        renderMarkers(raw, map, markerLayerRef);
 
         // Sorts raw data
         
@@ -314,7 +293,7 @@ export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading,
             rafPending = true;
             requestAnimationFrame(() => {
                 rafPending = false;
-                const pts = pointsRef.current;
+                const pts = heatPointsRef.current;
                 if (!pts.length) { onHover(null, 0, 0); return; }
                 let nearest = pts[0], best = Infinity;
                 for (const p of pts) {
@@ -378,10 +357,6 @@ export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading,
         }
         // refresh(mapRef.current, heatRef.current)
     }, [center]);
-
-    useEffect(() => {
-        console.log("Map mounted");
-    }, []);
 
     useEffect(() => {
         updateLayerVisibility();

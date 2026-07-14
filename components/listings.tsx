@@ -6,6 +6,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getListings } from "@/utils/listings";
 import type { GetListingsResult, SaleListing } from "@/utils/listings.types";
+import { ListingFilter, prepareListings } from "@/utils/listings/prepareListings";
+import { scoreListing } from "@/utils/listings/listingScore";
+import { on } from "node:cluster";
+import { cn } from "@/lib/utils";
 
 const money = (v: number | null) => (v == null ? "—" : `$${Math.round(v).toLocaleString()}`);
 const percent = (v: number | null) => (v == null ? "—" : `${(v * 100).toFixed(2)}%`);
@@ -24,34 +28,27 @@ const netYield = (l: SaleListing): number | null => {
 };
 
 interface ListingsViewerProps {
-  onClose: () => void;
+  onListingSelect: (listing: SaleListing) => void;
   data: GetListingsResult;
 }
 
-export default function ListingsViewer({ onClose, data }: ListingsViewerProps) {
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export default function ListingsViewer({ onListingSelect, data }: ListingsViewerProps) {
   const [minPpsf, setMinPpsf] = useState("");
   const [maxPpsf, setMaxPpsf] = useState("");
 
   // Client-side filtering of the loaded results (no refetch).
   const min = minPpsf ? Number(minPpsf) : null;
   const max = maxPpsf ? Number(maxPpsf) : null;
-  const visible = (data?.listings ?? []).filter((l) => {
+  const ppsfFilter: ListingFilter<SaleListing> = (l) => {
     const p = pricePerSqft(l);
     if (min != null && (p == null || p < min)) return false;
     if (max != null && (p == null || p > max)) return false;
     return true;
-  });
-  const hidden = (data?.listings.length ?? 0) - visible.length;
+  };
 
-  // Rank by HOA-adjusted yield (overrides the backend's gross-yield order).
-  const ranked = [...visible].sort(
-    (a, b) => (netYield(b) ?? -Infinity) - (netYield(a) ?? -Infinity),
-  );
-
+  // Filter + rank by HOA-adjusted yield in one pass (best first).
+  const ranked = prepareListings(data?.listings ?? [], [ppsfFilter], scoreListing, true);
+  const hidden = (data?.listings.length ?? 0) - ranked.length;
   return (
     <>
       {/* Filters (client-side, no refetch) */}
@@ -84,7 +81,7 @@ export default function ListingsViewer({ onClose, data }: ListingsViewerProps) {
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
             <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-              {visible.length} listing{visible.length === 1 ? "" : "s"}
+              {ranked.length} listing{ranked.length === 1 ? "" : "s"}
             </p>
             <span
               className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
@@ -104,7 +101,7 @@ export default function ListingsViewer({ onClose, data }: ListingsViewerProps) {
       {/* Results */}
       {data && (
         <div className="-mx-2 flex flex-1 flex-col gap-2 overflow-y-auto px-2">
-          {visible.length === 0 && (
+          {ranked.length === 0 && (
             <p className="py-8 text-center text-sm text-gray-400">
               {data.listings.length === 0
                 ? "No listings returned. Try a denser city or raise the limit."
@@ -114,7 +111,10 @@ export default function ListingsViewer({ onClose, data }: ListingsViewerProps) {
           {ranked.map((l: SaleListing) => (
             <div
               key={l.id}
-              className="rounded-2xl border border-white/50 bg-white/40 p-4 transition hover:bg-white/70"
+              className={cn("rounded-2xl border p-3 text-sm transition-all duration-150 hover:cursor-pointer",
+                l.selected ? "border-emerald-400 bg-emerald-100/40 hover:bg-emerald-100/50" : "border-white/50 bg-white/40 hover:bg-white/70"
+              )}
+              onClick={()=>{onListingSelect(l);ranked.forEach((l: SaleListing)=>l.selected = false);l.selected = !l.selected}}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">

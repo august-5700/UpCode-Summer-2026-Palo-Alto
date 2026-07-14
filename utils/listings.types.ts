@@ -24,6 +24,7 @@ export interface SaleListing {
   longitude: number | null;
   /** The complete, unmodified RentCast listing object. */
   raw: Record<string, unknown>;
+  selected: boolean;
 }
 
 export interface GetListingsResult {

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import type { TractData } from "@/utils/api";
 import RegionalOverview from "./regional-overview";
 import RegionalDetails from "./regional-details";
-import { GetListingsResult } from "@/utils/listings.types";
+import { GetListingsResult, SaleListing } from "@/utils/listings.types";
 import ListingsViewer from "./listings";
 
 interface SidebarProps {
@@ -14,9 +14,10 @@ interface SidebarProps {
   regionalData?: TractData;
   listingData?: GetListingsResult
   onClose: () => void;
+  onListingSelect?: (listing: SaleListing) => void;
 }
 
-export default function Sidebar({ title, regionalData, listingData, onClose }: SidebarProps) {
+export default function Sidebar({ title, regionalData, listingData, onClose, onListingSelect }: SidebarProps) {
   return (
     <Card className="absolute right-4 top-4 bottom-4 z-100 flex w-80 flex-col gap-6 overflow-y-auto rounded-3xl border border-white/40 bg-white/50 p-8 shadow-2xl backdrop-blur-2xl backdrop-saturate-150">
       {/* Header */}
@@ -41,8 +42,8 @@ export default function Sidebar({ title, regionalData, listingData, onClose }: S
         </>
       )}
 
-      {listingData && (
-        <ListingsViewer data={listingData} onClose={onClose} />
+      {listingData && onListingSelect && (
+        <ListingsViewer data={listingData} onListingSelect={onListingSelect} />
       )}
 
 
