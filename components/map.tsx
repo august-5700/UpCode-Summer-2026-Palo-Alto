@@ -40,7 +40,7 @@ interface MapProps {
 const maxZoom = 18;
 const minZoom = 2;
 const blockThreshold = 11;
-const subDivisions = 20;
+const subDivisions = 70;
 
 
 // How to convert points to heatmap tuples
