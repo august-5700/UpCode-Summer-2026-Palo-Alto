@@ -5,15 +5,17 @@ import Map from "./map";
 import Sidebar from "./sidebar";
 import MapTooltip from "./map-tooltip";
 import Comparison from "./comparison";
-import getCounties, { getTractByCoords, getCountyByCoords, type TractData } from "@/utils/api";
+import getCounties, { getBlockByCoords, getCountyByCoords, type TractData } from "@/utils/api";
 import { Search } from "./search";
 import { Filters } from "./filters";
 import { LatLngTuple } from "leaflet";
 import { LayersToggle } from "./layer-toggle";
 import PropertyListingsSidebar from "./listings";
 import { cn } from "@/lib/utils";
-import { getListings } from "@/utils/listings";
+import { getListings, getListingsInArea } from "@/utils/listings";
 import { GetListingsResult } from "@/utils/listings.types";
+import citySearch from "@/utils/citySearch";
+import L from "leaflet";
 
 type Hover = { block: any; x: number; y: number; countyName: string | null } | null;
 
@@ -23,7 +25,8 @@ const MOVE_THRESHOLD = 10; // px, moves smaller than this count as still (ignore
 type SidebarValue = null | 'block' | 'county' | 'listings'
 
 export default function MapView() {
-  const [regionalData, setRegionalData] = useState<TractData | null>(null);
+  const [mapBounds, setMapBounds] = useState<L.LatLngBounds>(new L.LatLngBounds([0, 1], [0, -1]))
+  const [regionalData, setRegionalData] = useState<TractData | null>(null)
   const [listingData, setListingData] = useState<GetListingsResult | null>(null)
   const [hover, setHover] = useState<Hover>(null);
   const [mapCenter, setMapCenter] = useState<{
@@ -54,6 +57,25 @@ export default function MapView() {
       countyNamesRef.current = lookup;
     });
   }, []);
+  
+  const handleViewListingBtn = useCallback(async () => {
+      async function getCityRange(){
+          return await citySearch([mapBounds.getSouth(), mapBounds.getWest()], [mapBounds.getNorth(), mapBounds.getEast()])
+      }
+      const cityRange = getCityRange()
+
+      console.log("City Range", cityRange)
+      function loadCitiesListings(){
+          Object.entries(cityRange).forEach(async (location:[string, string]) => {
+              const data = await getListings(location[0].trim(), location[1].trim(), 2000, 1500);
+              console.log("city listings", data)
+          })
+      }
+      loadCitiesListings()
+
+      const listings = await getListingsInArea(mapBounds)
+      setListingData(listings)
+  }, [])
 
   const handleSelect = useCallback(async (lat: number, lng: number, level: "county" | "block") => {
     const data = level === "block" ? await getBlockByCoords(lat, lng) : await getCountyByCoords(lat, lng);
@@ -123,6 +145,7 @@ export default function MapView() {
         setLoading={setLoading}
         center={mapCenter}
         activeLayer={activeLayer}
+        setMapBounds = {setMapBounds}
       />
       {(() => {
         switch (sidebarValue) {

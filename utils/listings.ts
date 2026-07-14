@@ -248,13 +248,13 @@ export async function explainEstimate(
  * yield. Reads only the DB — does NOT fetch from RentCast.
  */
 export async function getListingsInArea(
-  bounds: MapBounds,
+  bounds: L.LatLngBounds,
   limit: number = DEFAULT_SALE_LIMIT,
 ): Promise<SaleListing[]> {
   const rows = unwrap(
     await supabase.rpc("listings_in_view", {
-      min_lng: bounds.west, min_lat: bounds.south,
-      max_lng: bounds.east, max_lat: bounds.north, limit_n: limit,
+      min_lng: bounds.getWest(), min_lat: bounds.getSouth(),
+      max_lng: bounds.getEast(), max_lat: bounds.getNorth(), limit_n: limit,
     }),
   ) as SaleRow[];
   return (rows ?? []).map(mapSale);

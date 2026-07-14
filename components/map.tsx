@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useEffect, useRef, useState } from 'react';
+import { Dispatch, SetStateAction, use, useEffect, useRef, useState } from 'react';
 import L, { LatLngTuple, HeatLatLngTuple, Map as MapType, HeatLayer, Layer } from 'leaflet';
 import 'leaflet.heat';
 import { rankNormalize } from '@/utils/normalize';
@@ -15,7 +15,8 @@ import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
 import { attachData, attachWeightedData } from '@/utils/attachDataFast';
 import { computeHeatSimple } from '@/utils/score';
 import { renderCountyChoropleth, valueToHex } from '@/utils/renderCountyChoropleth';
-
+import citySearch from '@/utils/citySearch'
+import { getListings } from '@/utils/listings';
 
 
 interface MapProps {
@@ -29,6 +30,7 @@ interface MapProps {
         bbox: [number, number, number, number];
     };
     activeLayer: string;
+    setMapBounds: Dispatch<SetStateAction<L.LatLngBounds>>
 }
 
 
@@ -89,7 +91,7 @@ const renderMarkers = (
 };
 
 
-export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading, center, activeLayer }: MapProps) {
+export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading, center, activeLayer, setMapBounds}: MapProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const pointsRef = useRef<any[]>([]);
     const mapRef = useRef<L.Map | null>(null);
@@ -334,6 +336,7 @@ export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading,
 
         // After all the initializing is finished calls refresh
         refresh(map, heat);
+        setMapBounds(map.getBounds())
 
         // Cleanup function
         return () => {
