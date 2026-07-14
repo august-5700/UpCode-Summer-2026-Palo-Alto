@@ -6,22 +6,12 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getListings } from "@/utils/listings";
 import type { GetListingsResult, SaleListing } from "@/utils/listings.types";
+import { prepareListings, type ListingFilter } from "@/utils/listings/prepareListings";
+import { pricePerSqft } from "@/utils/listings/listingFilters";
+import { scoreListing, annualNetYield, hoaMonthly } from "@/utils/listings/listingScore";
 
 const money = (v: number | null) => (v == null ? "—" : `$${Math.round(v).toLocaleString()}`);
 const percent = (v: number | null) => (v == null ? "—" : `${(v * 100).toFixed(2)}%`);
-const pricePerSqft = (l: SaleListing) =>
-  l.price != null && l.squareFootage != null && l.squareFootage > 0 ? l.price / l.squareFootage : null;
-
-// Monthly HOA fee from the raw RentCast payload (0 if none).
-const hoaMonthly = (l: SaleListing): number => {
-  const hoa = (l.raw as { hoa?: { fee?: number } } | null)?.hoa;
-  return typeof hoa?.fee === "number" ? hoa.fee : 0;
-};
-// Gross yield minus HOA: (estimatedRent - HOA) × 12 / price.
-const netYield = (l: SaleListing): number | null => {
-  if (l.price == null || l.price <= 0 || l.estimatedRent == null) return null;
-  return ((l.estimatedRent - hoaMonthly(l)) * 12) / l.price;
-};
 
 export default function TestListingsModal({ onClose }: { onClose: () => void }) {
   const [city, setCity] = useState("");
@@ -50,21 +40,19 @@ export default function TestListingsModal({ onClose }: { onClose: () => void }) 
     }
   }
 
-  // Client-side filtering of the loaded results (no refetch).
+  // Client-side $/sqft band (no refetch), expressed as a pipeline filter.
   const min = minPpsf ? Number(minPpsf) : null;
   const max = maxPpsf ? Number(maxPpsf) : null;
-  const visible = (result?.listings ?? []).filter((l) => {
+  const ppsfFilter: ListingFilter<SaleListing> = (l) => {
     const p = pricePerSqft(l);
     if (min != null && (p == null || p < min)) return false;
     if (max != null && (p == null || p > max)) return false;
     return true;
-  });
-  const hidden = (result?.listings.length ?? 0) - visible.length;
+  };
 
-  // Rank by HOA-adjusted yield (overrides the backend's gross-yield order).
-  const ranked = [...visible].sort(
-    (a, b) => (netYield(b) ?? -Infinity) - (netYield(a) ?? -Infinity),
-  );
+  // Filter + rank by HOA-adjusted yield in one pass (best first).
+  const ranked = prepareListings(result?.listings ?? [], [ppsfFilter], scoreListing, true);
+  const hidden = (result?.listings.length ?? 0) - ranked.length;
 
   return (
     <div
@@ -156,7 +144,7 @@ export default function TestListingsModal({ onClose }: { onClose: () => void }) 
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                {visible.length} listing{visible.length === 1 ? "" : "s"}
+                {ranked.length} listing{ranked.length === 1 ? "" : "s"}
               </p>
               <span
                 className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
@@ -176,7 +164,7 @@ export default function TestListingsModal({ onClose }: { onClose: () => void }) 
         {/* Results */}
         {result && (
           <div className="-mx-2 flex flex-1 flex-col gap-2 overflow-y-auto px-2">
-            {visible.length === 0 && (
+            {ranked.length === 0 && (
               <p className="py-8 text-center text-sm text-gray-400">
                 {result.listings.length === 0
                   ? "No listings returned. Try a denser city or raise the limit."
@@ -196,7 +184,7 @@ export default function TestListingsModal({ onClose }: { onClose: () => void }) 
                   <div className="shrink-0 text-right">
                     <p className="font-bold text-gray-900">{money(l.price)}</p>
                     <p className="text-xs font-semibold text-emerald-700">
-                      {percent(netYield(l))} yield
+                      {percent(annualNetYield(l))} yield
                     </p>
                   </div>
                 </div>

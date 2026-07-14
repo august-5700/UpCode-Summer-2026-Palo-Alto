@@ -15,25 +15,28 @@ import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
 import { attachData, attachWeightedData } from '@/utils/attachDataFast';
 import { computeHeatSimple } from '@/utils/score';
 import { renderCountyChoropleth, valueToHex } from '@/utils/renderCountyChoropleth';
-import TestListingsModal from '@/components/test-listings-modal'
+import { renderMarkers } from '@/utils/renderMarkers';
 
 
 
 interface MapProps {
     onSelectCoords: (lat: number, lng: number, level: "county" | "block") => void;
     onHover: (block: any | null, x: number, y: number) => void;
+    onZoomChange: (newZoom: number) => void;
+    setLoading: (value:boolean) => void;
     center?: {
         lat: number;
         lng: number;
         bbox: [number, number, number, number];
     };
     activeLayer: string;
+    markerPoints: MarkerType[];
 }
 
 
 
 
-const maxZoom = 15;
+const maxZoom = 18;
 const minZoom = 2;
 const blockThreshold = 11;
 const subDivisions = 95;
@@ -49,16 +52,27 @@ const toHeatTuples = (points: any[]): HeatLatLngTuple[] => {
 };
 
 
-export default function Map({ onSelectCoords, onHover, center, activeLayer }: MapProps) {
+
+
+
+
+export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading, center, activeLayer, markerPoints }: MapProps) {
     const containerRef = useRef<HTMLDivElement>(null);
-    const pointsRef = useRef<any[]>([]);
+    const heatPointsRef = useRef<any[]>([]);
     const mapRef = useRef<L.Map | null>(null);
     const heatRef = useRef<any>(null);
+    const markerLayerRef = useRef<L.LayerGroup | null>(null);
     const requestIdRef = useRef(0);
     const choroplethRef = useRef<L.GeoJSON | null>(null);
     const choroplethRequestIdRef = useRef(0);
+    
+    const markerPointsRef = useRef<MarkerType[]>([]);
+    useEffect(() => {
+        markerPointsRef.current = markerPoints;
+        renderMarkers(markerPoints, mapRef.current!, markerLayerRef);
+    }, [markerPoints]);
+    
     const activeLayerRef = useRef(activeLayer);
-
     useEffect(() => {
         activeLayerRef.current = activeLayer;
     }, [activeLayer]);
@@ -69,9 +83,6 @@ export default function Map({ onSelectCoords, onHover, center, activeLayer }: Ma
         onSelectCoordsRef.current = onSelectCoords;
         onHoverRef.current = onHover;
     }, [onSelectCoords, onHover]);
-
-    const [loading, setLoading] = useState(true);
-    const [showTest, setShowTest] = useState(false);
 
     // Single refresh function, all changes happen here
     // Calls when first initialized and when any movement happens, zoom/drag
@@ -102,10 +113,6 @@ export default function Map({ onSelectCoords, onHover, center, activeLayer }: Ma
         
         // Checks if the requestId is current and that there is a map
         if(requestId !== requestIdRef.current || !mapRef.current) return;
-
-
-        // Update pointsRef with the new raw data
-        pointsRef.current = raw;
 
         // Sorts raw data
         
@@ -168,7 +175,7 @@ export default function Map({ onSelectCoords, onHover, center, activeLayer }: Ma
         if (showChoropleth) {
             if (!map.hasLayer(choroplethRef.current!)) {
                 choroplethRef.current!.addTo(map);
-            }
+            } 
         } else {
             if (map.hasLayer(choroplethRef.current!)) {
                 map.removeLayer(choroplethRef.current!);
@@ -265,7 +272,7 @@ export default function Map({ onSelectCoords, onHover, center, activeLayer }: Ma
         }
         loadChoropleth()
         console.log("Creating choropleth");
-        
+
         // Listener for when user clicks, grabs user's latitude and longitude
         map.on("click", (e: L.LeafletMouseEvent) => {
             const level = map.getZoom() >= 11 ? 'block' : 'county';
@@ -282,7 +289,7 @@ export default function Map({ onSelectCoords, onHover, center, activeLayer }: Ma
             rafPending = true;
             requestAnimationFrame(() => {
                 rafPending = false;
-                const pts = pointsRef.current;
+                const pts = heatPointsRef.current;
                 if (!pts.length) { onHover(null, 0, 0); return; }
                 let nearest = pts[0], best = Infinity;
                 for (const p of pts) {
@@ -298,6 +305,9 @@ export default function Map({ onSelectCoords, onHover, center, activeLayer }: Ma
 
         // Checks if the user moves, zoom/drag, if so calls the refresh function
         map.on('moveend', () => {updateLayerVisibility();refresh(map, heat)});
+        map.on('zoomend', () => {
+            onZoomChange(map.getZoom())
+        })
 
         // After all the initializing is finished calls refresh
         refresh(map, heat);
@@ -309,6 +319,8 @@ export default function Map({ onSelectCoords, onHover, center, activeLayer }: Ma
 
             map.remove();
 
+            markerLayerRef.current?.clearLayers();
+            markerLayerRef.current = null;
             mapRef.current = null;
             heatRef.current = null;
             choroplethRef.current = null;
@@ -342,28 +354,11 @@ export default function Map({ onSelectCoords, onHover, center, activeLayer }: Ma
     }, [center]);
 
     useEffect(() => {
-        console.log("Map mounted");
-    }, []);
-
-    useEffect(() => {
         updateLayerVisibility();
     }, [activeLayer]);
 
 return (
     <div className="relative w-screen h-screen overflow-hidden">
-
-        {loading && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center">
-                Loading map...
-            </div>
-        )}
-
-        <button
-            onClick={() => setShowTest(true)}
-            className="absolute left-4 top-4 z-[1000] rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-lg hover:bg-emerald-700"
-        >
-            Test listings
-        </button>
 
         <div
             ref={containerRef}
@@ -376,7 +371,6 @@ return (
             }}
         />
 
-        {showTest && <TestListingsModal onClose={() => setShowTest(false)} />}
     </div>
     );
 }
