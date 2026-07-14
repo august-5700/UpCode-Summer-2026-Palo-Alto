@@ -76,20 +76,19 @@ export function Search({handleSubmit, handleViewListings}: SearchProps) {
         <ComboboxList className='text-gray-900'>
           {(item: GeoData) => (
             <ComboboxItem
-              key={item.name}
-              value={item.name}
-              className="relative w-full items-center justify-between rounded-2xl p-4"
+                key={item.name}
+                value={item.name}
+                className="relative w-full items-center justify-between rounded-2xl p-4"
+                onClick={
+                    () => {
+                        handleSubmit(item.lat, item.lng, item.bbox)
+                        handleViewListings(item.name.split(', ')) // will fail if the item is not a city
+                    }
+                }
             >
-              <p className='absolute left-3' onClick={() => handleSubmit(item.lat, item.lng, item.bbox)}>
+              <p className='absolute left-3'>
                 {item.name}
               </p>
-
-              <button
-                onClick={() => handleViewListings(item.name.split(", "))}
-                className="absolute right-2! rounded-xl bg-black/5 px-3 py-0.5 text-[10px] border-blue-600 border font-semibold text-white! shadow-lg transition duration-300 hover:bg-blue-700 hover:scale-110"
-              >
-                Listings
-              </button>
             </ComboboxItem>
           )}
         </ComboboxList>

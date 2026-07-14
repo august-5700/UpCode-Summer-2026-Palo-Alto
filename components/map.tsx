@@ -15,31 +15,23 @@ import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
 import { attachData, attachWeightedData } from '@/utils/attachDataFast';
 import { computeHeatSimple } from '@/utils/score';
 import { renderCountyChoropleth, valueToHex } from '@/utils/renderCountyChoropleth';
-<<<<<<< HEAD
 import citySearch from '@/utils/citySearch'
 import { getListings } from '@/utils/listings';
-=======
 import { renderMarkers } from '@/utils/renderMarkers';
-
->>>>>>> cd059f4e56692bed64ac2b45d507faaecfd0b100
-
 
 interface MapProps {
     onSelectCoords: (lat: number, lng: number, level: "county" | "block") => void;
     onHover: (block: any | null, x: number, y: number) => void;
     onZoomChange: (newZoom: number) => void;
     setLoading: (value:boolean) => void;
+    setMapBounds: Dispatch<SetStateAction<L.LatLngBounds>>
     center?: {
         lat: number;
         lng: number;
         bbox: [number, number, number, number];
     };
     activeLayer: string;
-<<<<<<< HEAD
-    setMapBounds: Dispatch<SetStateAction<L.LatLngBounds>>
-=======
     markerPoints: MarkerType[];
->>>>>>> cd059f4e56692bed64ac2b45d507faaecfd0b100
 }
 
 
@@ -48,7 +40,7 @@ interface MapProps {
 const maxZoom = 18;
 const minZoom = 2;
 const blockThreshold = 11;
-const subDivisions = 95;
+const subDivisions = 20;
 
 
 // How to convert points to heatmap tuples
@@ -62,14 +54,10 @@ const toHeatTuples = (points: any[]): HeatLatLngTuple[] => {
 
 
 
-<<<<<<< HEAD
-export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading, center, activeLayer, setMapBounds}: MapProps) {
-=======
 
 
 
-export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading, center, activeLayer, markerPoints }: MapProps) {
->>>>>>> cd059f4e56692bed64ac2b45d507faaecfd0b100
+export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading, setMapBounds, center, activeLayer, markerPoints }: MapProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const heatPointsRef = useRef<any[]>([]);
     const mapRef = useRef<L.Map | null>(null);
@@ -112,6 +100,7 @@ export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading,
 
         //padded bounds
         const padBounds = bounds.pad(1.0)
+        setMapBounds(bounds)
     
         // If the zoom is past the threshold the raw data is grabbed from blocks dataset
         // Otherwise its grabbed from counties dataset
@@ -127,7 +116,9 @@ export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading,
         // Checks if the requestId is current and that there is a map
         if(requestId !== requestIdRef.current || !mapRef.current) return;
 
+
         // Sorts raw data
+
         
         const sorted = toHeatTuples(raw); // Removed the sort since the new method does not require it.
         
@@ -315,7 +306,6 @@ export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading,
 
         // After all the initializing is finished calls refresh
         refresh(map, heat);
-        setMapBounds(map.getBounds())
 
         // Cleanup function
         return () => {

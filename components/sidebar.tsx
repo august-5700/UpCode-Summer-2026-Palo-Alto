@@ -7,7 +7,7 @@ import type { TractData } from "@/utils/api";
 import RegionalOverview from "./regional-overview";
 import RegionalDetails from "./regional-details";
 import { GetListingsResult, SaleListing } from "@/utils/listings.types";
-import ListingsViewer from "./listings";
+import ListingsViewer from "./listings-viewer";
 
 interface SidebarProps {
   title?: string;
