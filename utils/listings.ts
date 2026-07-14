@@ -81,7 +81,7 @@ function mapSale(r: SaleRow): SaleListing {
     bedrooms: r.bedrooms, bathrooms: r.bathrooms, squareFootage: r.square_footage,
     lotSize: r.lot_size, yearBuilt: r.year_built, ageYears: r.age_years,
     propertyType: r.property_type, status: r.status, daysOnMarket: r.days_on_market,
-    latitude: r.latitude, longitude: r.longitude, raw: r.raw,
+    latitude: r.latitude, longitude: r.longitude, raw: r.raw, selected: false
   };
 }
 
@@ -248,13 +248,16 @@ export async function explainEstimate(
  * yield. Reads only the DB — does NOT fetch from RentCast.
  */
 export async function getListingsInArea(
-  bounds: MapBounds,
+  west: number,
+  south: number,
+  east: number,
+  north: number,
   limit: number = DEFAULT_SALE_LIMIT,
 ): Promise<SaleListing[]> {
   const rows = unwrap(
     await supabase.rpc("listings_in_view", {
-      min_lng: bounds.west, min_lat: bounds.south,
-      max_lng: bounds.east, max_lat: bounds.north, limit_n: limit,
+      min_lng: west, min_lat: south,
+      max_lng: east, max_lat: north, limit_n: limit,
     }),
   ) as SaleRow[];
   return (rows ?? []).map(mapSale);

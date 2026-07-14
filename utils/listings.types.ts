@@ -31,13 +31,13 @@ export interface GetListingsResult {
   /** Every cached sale listing for the region (limit is a fetch target, not a cap). */
   listings: SaleListing[];
   /** true = the cache holds every listing RentCast has for the query; false = capped by the limit. */
-  complete: boolean;
+  complete?: boolean;
   /** RentCast's reported total for the (filtered) query, so callers know how many exist. */
-  total: number;
+  total?: number;
   /** Rental comps fetched/cached for this region — a rough proxy for estimate confidence. */
-  rentalCount: number;
+  rentalCount?: number;
   /** RentCast's reported total of rentals available for the query. */
-  rentalTotal: number;
+  rentalTotal?: number;
 }
 
 /** One comp's role in a single property's rent estimate. */

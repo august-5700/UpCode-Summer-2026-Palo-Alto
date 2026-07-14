@@ -77,7 +77,7 @@ export default function ListingsViewer({ onListingSelect, data }: ListingsViewer
       )}
 
       {/* Status */}
-      {data && (
+      {data && data.rentalCount && data.rentalTotal && data.complete && (
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
             <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
