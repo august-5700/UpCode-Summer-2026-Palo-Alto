@@ -5,7 +5,7 @@ import Map from "./map";
 import Sidebar from "./sidebar";
 import MapTooltip from "./map-tooltip";
 import Comparison from "./comparison";
-import {getCounties, getBlockByCoords, getCountyByCoords, getCountyByCityState } from "@/utils/api";
+import { getCounties, getBlockByCoords, getCountyByCoords, getCountyByCityState } from "@/utils/api";
 import { Search } from "./search";
 import { Filters } from "./filters";
 import { LatLngTuple } from "leaflet";
@@ -204,11 +204,10 @@ export default function MapView() {
                 title={regionalData.title}
                 regionalData={regionalData}
                 listingData={listingData}
-                regionalData={regionalData}
                 onClose={() => {setRegionalData(null);setSidebarValue(null)}}
                 onListingSelect={(listing: SaleListing) => handleListingSelect(listing)}
               />
-            ) : null: null
+            ) : null
 
           default:
             return null;

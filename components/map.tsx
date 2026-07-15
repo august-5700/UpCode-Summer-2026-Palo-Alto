@@ -9,7 +9,7 @@ import 'leaflet/dist/leaflet.css';
 import { heatRadiusForZoom } from '@/utils/heatRadius';
 
 import { pixelRadius } from '@/utils/convertToMeters';
-import getCounties, { getBlocksWithinRange} from '@/utils/api'
+import { getCounties, getBlocksWithinRange } from '@/utils/api'
 import { combinePoints } from '@/utils/combinePoints';
 import { generateTriangleGrid } from '@/utils/grids/generateTriangleGrid';
 import { attachData, attachWeightedData } from '@/utils/attachDataFast';
@@ -18,6 +18,7 @@ import { renderCountyChoropleth, valueToHex } from '@/utils/renderCountyChorople
 import citySearch from '@/utils/citySearch'
 import { getListings } from '@/utils/listings';
 import { renderMarkers } from '@/utils/renderMarkers';
+import { MarkerType } from '@/utils/types';
 
 interface MapProps {
     onSelectCoords: (lat: number, lng: number, level: "county" | "block") => void;
