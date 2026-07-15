@@ -198,13 +198,14 @@ export default function MapView() {
             ) : null;
 
           case "listings":
-            return listingData ? (
+            return listingData ? regionalData ? (
               <Sidebar
                 listingData={listingData}
+                regionalData={regionalData}
                 onClose={() => {setRegionalData(null);setSidebarValue(null)}}
                 onListingSelect={(listing: SaleListing) => handleListingSelect(listing)}
               />
-            ) : null;
+            ) : null: null
 
           default:
             return null;

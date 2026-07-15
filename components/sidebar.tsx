@@ -32,7 +32,7 @@ export default function Sidebar({ title, regionalData, listingData, onClose, onL
           <X className="h-5 w-5" />
         </Button>
       </div>
-      {regionalData && (
+      {regionalData && !listingData && (
         <>
           <RegionalOverview data={regionalData}/>
 
@@ -42,8 +42,11 @@ export default function Sidebar({ title, regionalData, listingData, onClose, onL
         </>
       )}
 
-      {listingData && onListingSelect && (
+      {listingData && regionalData && onListingSelect && (
+      <>
+        <RegionalOverview data={regionalData}/>
         <ListingsViewer data={listingData} onListingSelect={onListingSelect} />
+      </>
       )}
 
 

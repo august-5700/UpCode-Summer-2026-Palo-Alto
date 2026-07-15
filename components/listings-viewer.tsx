@@ -30,6 +30,7 @@ const netYield = (l: SaleListing): number | null => {
 interface ListingsViewerProps {
   onListingSelect: (listing: SaleListing) => void;
   data: GetListingsResult;
+  
 }
 
 export default function ListingsViewer({ onListingSelect, data }: ListingsViewerProps) {
@@ -51,6 +52,9 @@ export default function ListingsViewer({ onListingSelect, data }: ListingsViewer
   const hidden = (data?.listings.length ?? 0) - ranked.length;
   return (
     <>
+      {
+
+      }
       {/* Filters (client-side, no refetch) */}
       {data && (
         <div className="flex items-center gap-2">
