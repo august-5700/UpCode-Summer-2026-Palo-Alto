@@ -1,7 +1,9 @@
 import { LatLngTuple } from "leaflet";
 import { STATE_ABBR } from "@/utils/stateCodeDict";
-
+// generatingPoints function
 export default async function citySearch(bottomLeft: LatLngTuple, topRight: LatLngTuple):Promise<[string, string][]> {
+    const testPoints = [generatingPoints(bottomLeft, topRight, 5, 5)]
+    console.log("Test Points: ", testPoints)
     const points = [[(bottomLeft[0] + topRight[0]) / 2, (bottomLeft[1] + topRight[1]) / 2]];
     const radius = 100
     let addresses:[string, string][] = [];
