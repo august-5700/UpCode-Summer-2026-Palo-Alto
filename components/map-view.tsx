@@ -216,14 +216,11 @@ export default function MapView() {
       
       {hover && <MapTooltip block={hover.block} x={hover.x} y={hover.y} countyName={hover.countyName} />}
       <Search 
-        handleSubmit={(lat, lng, bbox) => {
-          handleSelect(lat, lng, 'county')
-          setMapCenter({lat: lat, lng: lng, bbox: bbox})
-        }}
-        handleViewListings={(item) => {
-          console.log('viewing listings')
-          setSidebarValue('listings')
-          viewListings(item)
+        handleSubmit={(lat, lng, bbox, item) => {
+            setMapCenter({lat: lat, lng: lng, bbox: bbox})
+            console.log('viewing listings')
+            setSidebarValue('listings')
+            viewListings(item)
         }}
       />
       <Filters />

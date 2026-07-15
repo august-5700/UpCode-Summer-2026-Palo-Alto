@@ -9,6 +9,7 @@ import {
   ComboboxList,
 } from "@/components/ui/combobox"
 import { getResultFromAddressAutocomplete } from "@/utils/api";
+import { GeoData } from "@/utils/types";
 
 import { Search as SearchIcon } from 'lucide-react';
 import { useState } from "react";
@@ -17,13 +18,12 @@ import { useState } from "react";
 // also we're going to need to find the most similar counties to the current search and display them in the dropdown which seems really time inefficient 
 
 interface SearchProps {
-        handleSubmit: (lat: number, lng: number, bbox:[number, number, number, number]) => void;
-        handleViewListings: (item: string[]) => void;
+        handleSubmit: (lat: number, lng: number, bbox:[number, number, number, number], item: string[]) => void;
 }
 
 
 
-export function Search({handleSubmit, handleViewListings}: SearchProps) {
+export function Search({handleSubmit}: SearchProps) {
     // useEffect with empty dep to fetch tracts
     // onchange on the input leads to a function to update the top 5 results, which should use a useState
     // on enter or search or whatever, just pick the first one
@@ -66,7 +66,7 @@ export function Search({handleSubmit, handleViewListings}: SearchProps) {
           console.log('key pressed')
           if (event.key == 'Enter'){
             console.log('enter pressed')
-            handleSubmit(menu[0].lat, menu[0].lng, menu[0].bbox)
+            handleSubmit(menu[0].lat, menu[0].lng, menu[0].bbox, menu[0].name.split(', '))
           }
         }} 
     />
@@ -81,8 +81,7 @@ export function Search({handleSubmit, handleViewListings}: SearchProps) {
                 className="relative w-full items-center justify-between rounded-2xl p-4"
                 onClick={
                     () => {
-                        handleSubmit(item.lat, item.lng, item.bbox)
-                        handleViewListings(item.name.split(', ')) // will fail if the item is not a city
+                        handleSubmit(item.lat, item.lng, item.bbox, item.name.split(', '))
                     }
                 }
             >
