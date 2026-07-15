@@ -1,10 +1,3 @@
-export const fetchGeoDataForPoint = async (lat:number, lon:number) => {
-  const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
-  if (!res.ok) {
-    throw new Error("Response failed with status " + res.status);
-  }
-  return res.json()
-}
 import { LatLngBounds } from "leaflet"
 import { createClient } from "@supabase/supabase-js";
 import { computeHeatScore } from "./score";
@@ -14,7 +7,15 @@ const supabase = createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwY3hjam1vdHBvdXh1aXdqbHBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNDU3NDYsImV4cCI6MjA5NzcyMTc0Nn0.mz2E2rOTdBAk34OEGF-KSr5NgPDvnceg8Ayv2cSpMqw"
 );
 
-export default async function getCounties() {
+export const fetchGeoDataForPoint = async (lat:number, lon:number) => {
+  const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+  if (!res.ok) {
+    throw new Error("Response failed with status " + res.status);
+  }
+  return res.json()
+}
+
+export async function getCounties() {
   const { data, error } = await supabase
     .from("counties")
     .select("*");
@@ -39,26 +40,6 @@ export async function getBlocks() {
   console.log(data)
   return data;
 }
-
-
-
-// ---- Sidebar data --~~~:::::::
-
-export type Metric = {
-  label: string;
-  value: string;
-  sub?: string;
-  icon: "home" | "dollar" | "building";
-};
-
-export type TractData = {
-  title: string;
-  score: number | null;
-  regional: number | null;
-  national: number | null;
-  metrics: Metric[];
-};
-
 
 const num = (v: unknown): number | null => {
   if (v === null || v === undefined || v === "") return null;
@@ -238,6 +219,7 @@ export async function getBlocksWithinRange(bounds: LatLngBounds) {
 
 
 import { LatLngTuple } from "leaflet";
+import { TractData } from "./types";
 
 var requestOptions = {
   method: 'GET',
@@ -267,8 +249,31 @@ export async function getResultFromAddressAutocomplete(input: String, bias: LatL
   }
 }
 
+export async function getCountyByCityState(
+  item: string[]
+): Promise<TractData | null> {
+  if (item.length < 2) return null;
 
+  const [city, state] = item;
 
-export function wrapper(func:any){
-  return func()
+  const query = encodeURIComponent(`${city}, ${state}, USA`);
+
+  const res = await fetch(
+    `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1`
+  );
+
+  if (!res.ok) {
+    throw new Error(`Geocoding failed with status ${res.status}`);
+  }
+
+  const results = await res.json();
+
+  if (!results.length) {
+    return null;
+  }
+
+  const lat = Number(results[0].lat);
+  const lng = Number(results[0].lon);
+
+  return getCountyByCoords(lat, lng);
 }

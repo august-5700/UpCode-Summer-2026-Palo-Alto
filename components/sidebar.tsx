@@ -3,11 +3,11 @@
 import { X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import type { TractData } from "@/utils/api";
 import RegionalOverview from "./regional-overview";
 import RegionalDetails from "./regional-details";
 import { GetListingsResult, SaleListing } from "@/utils/listings.types";
 import ListingsViewer from "./listings-viewer";
+import { TractData } from "@/utils/types";
 
 interface SidebarProps {
   title?: string;
