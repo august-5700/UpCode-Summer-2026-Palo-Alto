@@ -77,6 +77,8 @@ export default function MapView() {
         loadCitiesListings()
 
         const listings = await getListingsInArea(mapBounds.getWest(), mapBounds.getSouth(), mapBounds.getEast(), mapBounds.getNorth())
+        handleSelect(mapBounds.getCenter().lat, mapBounds.getCenter().lng, 'county')
+    
         setListingData({listings})
         setMarkerPoints(listings.map((listing: SaleListing) => {
             return {
