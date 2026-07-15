@@ -204,10 +204,11 @@ export default function MapView() {
                 title={regionalData.title}
                 regionalData={regionalData}
                 listingData={listingData}
+                regionalData={regionalData}
                 onClose={() => {setRegionalData(null);setSidebarValue(null)}}
                 onListingSelect={(listing: SaleListing) => handleListingSelect(listing)}
               />
-            ) : null;
+            ) : null: null
 
           default:
             return null;
