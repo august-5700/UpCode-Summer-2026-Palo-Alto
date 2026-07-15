@@ -5,7 +5,7 @@ import Map from "./map";
 import Sidebar from "./sidebar";
 import MapTooltip from "./map-tooltip";
 import Comparison from "./comparison";
-import getCounties, { getBlockByCoords, getCountyByCoords, type TractData } from "@/utils/api";
+import {getCounties, getBlockByCoords, getCountyByCoords, getCountyByCityState } from "@/utils/api";
 import { Search } from "./search";
 import { Filters } from "./filters";
 import { LatLngTuple } from "leaflet";
@@ -17,6 +17,7 @@ import { GetListingsResult, SaleListing } from "@/utils/listings.types";
 import citySearch from "@/utils/citySearch";
 import L from "leaflet";
 import { renderMarkers } from "@/utils/renderMarkers";
+import { MarkerType, TractData } from "@/utils/types";
 
 type Hover = { block: any; x: number; y: number; countyName: string | null } | null;
 
@@ -135,11 +136,10 @@ export default function MapView() {
     if (item.length !== 2) return;
 
     try {
-      // Call the server action directly — small caps keep testing frugal.
       setLoading(true)
-      const data = await getListings(item[0], item[1], 2000, 1500);
-      console.log('viewlistings function', markerPoints)
-      setMarkerPoints(data.listings.map((listing: SaleListing) => {
+      const listingData = await getListings(item[0], item[1], 2000, 1500);
+      const regionalData = await getCountyByCityState(item)
+      setMarkerPoints(listingData.listings.map((listing: SaleListing) => {
         return {
           lat: listing.latitude,
           lng: listing.longitude,
@@ -147,7 +147,8 @@ export default function MapView() {
           highlighted: false
         }
       }));
-      setListingData(data);
+      setListingData(listingData);
+      setRegionalData(regionalData)
     } catch (err) {
       console.log(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -198,8 +199,10 @@ export default function MapView() {
             ) : null;
 
           case "listings":
-            return listingData ? (
+            return listingData && regionalData ? (
               <Sidebar
+                title={regionalData.title}
+                regionalData={regionalData}
                 listingData={listingData}
                 onClose={() => {setRegionalData(null);setSidebarValue(null)}}
                 onListingSelect={(listing: SaleListing) => handleListingSelect(listing)}
