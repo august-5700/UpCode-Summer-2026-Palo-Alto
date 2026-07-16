@@ -104,7 +104,7 @@ export default function ListingsViewer({ onListingSelect, data }: ListingsViewer
 
       {/* Results */}
       {data && (
-        <div className="-mx-2 flex flex-1 flex-col gap-2 overflow-y-auto px-2">
+        <div className="-mx-2 flex flex-1 flex-col gap-2 overflow-y-auto h-70 px-2">
           {ranked.length === 0 && (
             <p className="py-8 text-center text-sm text-gray-400">
               {data.listings.length === 0
