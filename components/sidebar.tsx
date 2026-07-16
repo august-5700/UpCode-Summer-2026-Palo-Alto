@@ -1,55 +1,149 @@
-"use client";
+'use client';
 
-import { X } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import RegionalOverview from "./regional-overview";
-import RegionalDetails from "./regional-details";
-import { GetListingsResult, SaleListing } from "@/utils/listings.types";
-import ListingsViewer from "./listings-viewer";
-import { TractData } from "@/utils/types";
+import { ArrowRightLeft, Plus, X } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import RegionalOverview from './regional-overview';
+import RegionalDetails from './regional-details';
+import { GetListingsResult, SaleListing } from '@/utils/listings.types';
+import ListingsViewer from './listings-viewer';
+import { TractData } from '@/utils/types';
+import { Dispatch, SetStateAction, useState } from 'react';
+import { motion } from 'framer-motion';
+import ComparisonSelector from './comparison-selector';
+import { cn } from '@/lib/utils';
 
 interface SidebarProps {
-  title?: string;
-  regionalData?: TractData;
-  listingData?: GetListingsResult
-  onClose: () => void;
-  onListingSelect?: (listing: SaleListing) => void;
+	regionalData: TractData[] | null;
+	listingData?: GetListingsResult;
+	onClose: () => void;
+	onListingSelect?: (listing: SaleListing) => void;
+    comparisonSelectorActive: boolean;
+    setComparisonSelectorActive: (value: boolean) => void;
+    onRemoveRegion: (item: TractData) => void;
 }
 
-export default function Sidebar({ title, regionalData, listingData, onClose, onListingSelect }: SidebarProps) {
-  return (
-    <Card className="absolute right-4 top-4 bottom-4 z-100 flex w-80 flex-col gap-6 overflow-y-auto rounded-3xl border border-white/40 bg-white/50 p-8 shadow-2xl backdrop-blur-2xl backdrop-saturate-150">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <h2 className="text-2xl font-bold tracking-tight text-gray-900">{title ?? 'Property Listings'}</h2>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="-mr-2 -mt-1 rounded-full text-gray-400 hover:text-gray-900"
-          onClick={onClose}
+export default function Sidebar({
+	regionalData,
+	listingData,
+	onClose,
+	onListingSelect,
+    comparisonSelectorActive,
+    setComparisonSelectorActive,
+    onRemoveRegion
+}: SidebarProps) {
+
+	// 1. Calculate raw width values based on active slots/panels
+	const baseMultiplier = regionalData
+		? regionalData.length 
+		: 0;
+
+
+	return (
+        <motion.div
+            layout
+            initial={{ opacity:0, x:"var(--entry-distance-x)" }} 
+            layout
+            animate={{ opacity:1, x:"0" }}
+            exit={{ opacity:0, x:"var(--entry-distance-x)" }}
+            transition = {{ duration:0.3 }}
+            className={cn('overflow-x-auto absolute right-4 top-4 z-100 [--entry-distance-x:20px] md:[--entry-distance-x:50px]',
+                baseMultiplier > 1 ? 'w-lg' : 'w-88'
+            )}
         >
-          <X className="h-5 w-5" />
-        </Button>
-      </div>
-      {regionalData && !listingData && (
-        <>
-          <RegionalOverview data={regionalData}/>
+            <Card
+                className='min-h-full w-full flex flex-col gap-6 rounded-3xl border border-white/40 bg-white/50 p-8 shadow-2xl backdrop-blur-2xl backdrop-saturate-150'
+                
+            >
+                {/* Dynamic Header */}
+                {baseMultiplier > 1 && (
+                    <div className="flex items-start justify-between">
+                        <h2 className="text-2xl font-bold tracking-tight text-gray-900">
+                            Comparison
+                        </h2>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="rounded-full text-gray-400 hover:text-gray-900"
+                                onClick={() => {setComparisonSelectorActive(true)}}
+                            >
+                                {regionalData && (
+                                    regionalData.length > 1 ? (
+                                        <Plus className="h-5 w-5" />
+                                    ) : (
+                                        <ArrowRightLeft className="h-5 w-5" />
+                                    )
+                                )}
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="rounded-full text-gray-400 hover:text-gray-900"
+                                onClick={onClose}
+                            >
+                                <X className="h-5 w-5" />
+                            </Button>
+                        </div>
+                    </div>
+                )}
 
-          <hr className="border-gray-100" />
-
-          <RegionalDetails data={regionalData} />
-        </>
-      )}
-
-      {listingData && regionalData && onListingSelect && (
-      <>
-        <RegionalOverview data={regionalData}/>
-        <ListingsViewer data={listingData} onListingSelect={onListingSelect} />
-      </>
-      )}
-
-
-    </Card>
-  );
+                {/* Panels Layout Container */}
+                <div className="flex flex-row h-full w-full min-h-0 min-w-0 space-x-5 overflow-x-auto">
+                    {/* Dynamic Slots for Regions with Listing Viewer Layout */}
+                    {regionalData &&
+                        regionalData.map((region: TractData, index: number) => (
+                            <div
+                                key={region.title || `region-${index}`}
+                                className={`space-y-4 h-full min-h-0 w-max shrink-0 overflow-y-auto overflow-x-clip px-2 `}
+                            >
+                                <div className="flex items-start justify-between">
+                                    <h2 className="text-2xl font-bold tracking-tight text-gray-900">
+                                        {region.title}
+                                    </h2>
+                                    {baseMultiplier > 1 ? (
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="rounded-full text-gray-400 hover:text-gray-900"
+                                                onClick={()=>onRemoveRegion(region)}
+                                            >
+                                                <X className="h-5 w-5" />
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="rounded-full text-gray-400 hover:text-gray-900"
+                                                onClick={() => {setComparisonSelectorActive(true)}}
+                                            >
+                                                <ArrowRightLeft className="h-5 w-5" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="rounded-full text-gray-400 hover:text-gray-900"
+                                                onClick={onClose}
+                                            >
+                                                <X className="h-5 w-5" />
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+                                <RegionalOverview data={region} />
+                                {listingData && onListingSelect && (
+                                    <ListingsViewer data={listingData} onListingSelect={onListingSelect} />
+                                )}
+                                {!listingData && (
+                                    <RegionalDetails data={region} />
+                                )}
+                            </div>
+                        ))}
+                </div>
+            </Card>
+        </motion.div>
+	);
 }
