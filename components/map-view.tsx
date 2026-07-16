@@ -18,6 +18,7 @@ import citySearch from "@/utils/citySearch";
 import L from "leaflet";
 import { renderMarkers } from "@/utils/renderMarkers";
 import { MarkerType, TractData } from "@/utils/types";
+import ComparisonSelectorToast from "./comparison-selector";
 
 type Hover = { block: any; x: number; y: number; countyName: string | null } | null;
 
@@ -40,6 +41,14 @@ export default function MapView() {
     const [enableListingsButton, setEnableListingButton] = useState<boolean>(false);
     const [loading, setLoading] = useState(true);
     const [markerPoints, setMarkerPoints] = useState<MarkerType[]>([]);
+    const [comparisonSelectorActive, setComparisonSelectorActive] = useState<boolean>(false);
+    const [showComparisonToast, setShowComparisonToast] = useState<boolean>(false);
+    const comparisonSelectorActiveRef = useRef(comparisonSelectorActive);
+
+    useEffect(() => {
+        comparisonSelectorActiveRef.current = comparisonSelectorActive;
+        console.log('comparison selector is ', comparisonSelectorActiveRef.current)
+    }, [comparisonSelectorActive]);
 
 
     const [activeLayer, setActiveLayer] = useState<
@@ -61,58 +70,63 @@ export default function MapView() {
         });
     }, []);
     
-        const handleViewListingBtn = useCallback(async () => {
-            console.log('mapbounds', mapBounds)
-            const cityRange = await citySearch([mapBounds.getSouth(), mapBounds.getWest()], [mapBounds.getNorth(), mapBounds.getEast()])
+    const handleViewListingBtn = useCallback(async () => {
+        console.log('mapbounds', mapBounds)
+        const cityRange = await citySearch([mapBounds.getSouth(), mapBounds.getWest()], [mapBounds.getNorth(), mapBounds.getEast()])
 
-            console.log("City Range", cityRange)
-            function loadCitiesListings(){
-                cityRange.forEach(async (location:[string, string]) => {
-                    console.log('location: ', location)
-                    const data = await getListings(location[0].trim(), location[1].trim(), 2000, 1500);
-                    console.log("city listings", data)
-                })
-                
+        console.log("City Range", cityRange)
+        function loadCitiesListings(){
+            cityRange.forEach(async (location:[string, string]) => {
+                console.log('location: ', location)
+                const data = await getListings(location[0].trim(), location[1].trim(), 2000, 1500);
+                console.log("city listings", data)
+            })
+            
+        }
+        loadCitiesListings()
+
+        const listings = await getListingsInArea(mapBounds.getWest(), mapBounds.getSouth(), mapBounds.getEast(), mapBounds.getNorth())
+        handleSelect(mapBounds.getCenter().lat, mapBounds.getCenter().lng, 'county', false)
+    
+        setListingData({listings})
+        setMarkerPoints(listings.map((listing: SaleListing) => {
+            return {
+                lat: listing.latitude,
+                lng: listing.longitude,
+                address: listing.address,
+                highlighted: false
             }
-            loadCitiesListings()
-
-            const listings = await getListingsInArea(mapBounds.getWest(), mapBounds.getSouth(), mapBounds.getEast(), mapBounds.getNorth())
-            handleSelect(mapBounds.getCenter().lat, mapBounds.getCenter().lng, 'county', false)
-        
-            setListingData({listings})
-            setMarkerPoints(listings.map((listing: SaleListing) => {
-                return {
-                    lat: listing.latitude,
-                    lng: listing.longitude,
-                    address: listing.address,
-                    highlighted: false
-                }
-            }));
+        }));
     }, [mapBounds])
 
-        const handleSelect = useCallback(async (lat: number, lng: number, level: "county" | "block", set: boolean) => {
+    const handleSelect = useCallback(async (lat: number, lng: number, level: "county" | "block", set: boolean) => {
+        console.log(comparisonSelectorActive)
         const data = level === "block" ? await getBlockByCoords(lat, lng) : await getCountyByCoords(lat, lng);
-        if (data) {
-            setRegionalData(prev => {
-                const safePrev = prev ?? []; 
-                return [...safePrev, data];
-            }); // TODO: only append if comparisonselector is open, then close it. also, only do anything if the selected county is different from the current one
+        if (data && !regionalData?.includes(data)) {
+            if (comparisonSelectorActiveRef.current) {
+                console.log('adding to comparison. regionalData will be: ', (regionalData: any) => [...(regionalData ?? []), data])
+                setRegionalData(prev => [...(prev ?? []), data]);
+                setComparisonSelectorActive(false);
+            } else {
+                console.log('replacing county. regionalData will be: ', data)
+                setRegionalData([data]);
+            }
         }
         
         if (set) {
             setSidebarValue(level);
         }
-        }, []);
+    }, [comparisonSelectorActive]);
 
 
     const handleHover = useCallback((block: any | null, x: number, y: number) => {
         if (!block) {
         if (timerRef.current) clearTimeout(timerRef.current);
-        timerRef.current = null;
-        anchorRef.current = null;
-        latestRef.current = null;
-        setHover(null);
-        return;
+            timerRef.current = null;
+            anchorRef.current = null;
+            latestRef.current = null;
+            setHover(null);
+            return;
         }
 
         // tract rows carry tract_code but no name, so resolve the county name for the title
@@ -136,10 +150,10 @@ export default function MapView() {
     const handleListingSelect = useCallback((listing: SaleListing) => {
         console.log('listing selected', listing)
         setMarkerPoints(prev =>
-        prev.map(marker => ({
-            ...marker,
-            highlighted: marker.address === listing.address
-        }))
+            prev.map(marker => ({
+                ...marker,
+                highlighted: marker.address === listing.address
+            }))
         );
     }, []);
 
@@ -161,7 +175,7 @@ export default function MapView() {
         setListingData(listingData);
         if (regionalData){
             setRegionalData([regionalData])
-            //TODO:turn comparsion view off
+            setComparisonSelectorActive(false)
         }
         } catch (err) {
         console.log(err instanceof Error ? err.message : "Something went wrong");
@@ -180,6 +194,9 @@ export default function MapView() {
                     Loading...
                 </div>
             )}
+            {showComparisonToast && (
+                <ComparisonSelectorToast item={sidebarValue ?? 'item'} onFinished={()=>setShowComparisonToast(false)}/>
+            )}
             <Map 
                 onSelectCoords={(lat, lng, level) => handleSelect(lat, lng, level, true)}
                 onHover={handleHover} 
@@ -189,7 +206,7 @@ export default function MapView() {
                 setLoading={setLoading}
                 center={mapCenter}
                 activeLayer={activeLayer}
-                setMapBounds = {(value)=>{setMapBounds(value);console.log('mapbounds after set', mapBounds)}}
+                setMapBounds = {setMapBounds}
                 markerPoints={markerPoints}
             />
             {(() => {
@@ -197,29 +214,62 @@ export default function MapView() {
                     case "block":
                         return regionalData ? (
                         <Sidebar
-                            title={regionalData.length > 1 ? 'Comparison' : regionalData[0].title}
                             regionalData={regionalData}
                             onClose={() => {setRegionalData(null);setSidebarValue(null)}}
+                            comparisonSelectorActive={comparisonSelectorActive}
+                            setComparisonSelectorActive={(value: boolean) => {
+                                setComparisonSelectorActive(value);
+                                if (value) {
+                                    setShowComparisonToast(true);
+                                }
+                            }}
+                            onRemoveRegion={(region: TractData) =>
+                                setRegionalData(prev =>
+                                    prev ? prev.filter(r => r !== region) : null
+                                )
+                            }
                         />
                         ) : null;
 
                     case "county":
                         return regionalData ? (
                         <Sidebar
-                            title={regionalData.length > 1 ? 'Comparison' : regionalData[0].title}
                             regionalData={regionalData}
                             onClose={() => {setRegionalData(null);setSidebarValue(null)}}
+                            comparisonSelectorActive={comparisonSelectorActive}
+                            setComparisonSelectorActive={(value: boolean) => {
+                                setComparisonSelectorActive(value);
+                                if (value) {
+                                    setShowComparisonToast(true);
+                                }
+                            }}
+                            onRemoveRegion={(region: TractData) =>
+                                setRegionalData(prev =>
+                                    prev ? prev.filter(r => r !== region) : null
+                                )
+                            }
                         />
                         ) : null;
 
                     case "listings":
                         return listingData && regionalData ? (
                         <Sidebar
-                            title={regionalData.length > 1 ? 'Comparison' : regionalData[0].title}
                             regionalData={regionalData}
                             listingData={listingData}
                             onClose={() => {setRegionalData(null);setSidebarValue(null)}}
                             onListingSelect={(listing: SaleListing) => handleListingSelect(listing)}
+                            comparisonSelectorActive={comparisonSelectorActive}
+                            setComparisonSelectorActive={(value: boolean) => {
+                                setComparisonSelectorActive(value);
+                                if (value) {
+                                    setShowComparisonToast(true);
+                                }
+                            }}
+                            onRemoveRegion={(region: TractData) =>
+                                setRegionalData(prev =>
+                                    prev ? prev.filter(r => r !== region) : null
+                                )
+                            }
                         />
                         ) : null
 
