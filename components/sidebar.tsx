@@ -43,6 +43,7 @@ export default function Sidebar({
 
 	return (
         <motion.div
+            layout
             initial={{ opacity:0, x:"var(--entry-distance-x)" }} 
             layout
             animate={{ opacity:1, x:"0" }}

@@ -79,7 +79,7 @@ export default function MapView() {
         function loadCitiesListings(){
             cityRange.forEach(async (location:[string, string]) => {
                 console.log('location: ', location)
-                const data = await getListings(location[0].trim(), location[1].trim(), 2000, 1500);
+                const data = await getListings(location[0].trim(), location[1].trim(), 2000, 1000);
                 console.log("city listings", data)
             })
             
