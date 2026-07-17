@@ -11,6 +11,7 @@ import { scoreListing } from '@/utils/listings/listingScore';
 import { on } from 'node:cluster';
 import { cn } from '@/lib/utils';
 import { PropertyListing } from './property-listing';
+import { DEFAULT_FILTERS } from '@/utils/listings/listingFilters';
 
 
 const pricePerSqft = (l: SaleListing) =>
@@ -41,7 +42,7 @@ export default function ListingsViewer({ onListingSelect, data, title }: Listing
 	};
 
 	// Filter + rank by HOA-adjusted yield in one pass (best first).
-	const ranked = prepareListings(data?.listings ?? [], [ppsfFilter], scoreListing, true);
+	const ranked = prepareListings(data?.listings ?? [], [ppsfFilter].concat(DEFAULT_FILTERS), scoreListing, true);
 	const hidden = (data?.listings.length ?? 0) - ranked.length;
 	return (
 		<div className='w-76'>

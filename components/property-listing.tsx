@@ -11,6 +11,7 @@ import {
 import { cn } from "@/lib/utils";
 import { getResultFromAddressAutocomplete } from "@/utils/api";
 import { SaleListing } from "@/utils/listings.types";
+import { pricePerSqft } from "@/utils/listings/listingFilters";
 import { GeoData } from "@/utils/types";
 
 import { Search as SearchIcon } from 'lucide-react';
@@ -77,18 +78,47 @@ export function PropertyListing({l, onListingSelect, ranked, title}: PropertyLis
             </div>
             <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600">
                 <span>Est. rent {money(l.estimatedRent)}/mo</span>
-                {/* {hoaMonthly(l) > 0 && <span>HOA {money(hoaMonthly(l))}/mo</span>} */}
-                {/* <span>
-                    {l.bedrooms ?? '—'} bd · {l.bathrooms ?? '—'} ba
-                </span> */}
+
                 <span>{l.squareFootage ? l.squareFootage.toLocaleString() + ' sq•ft' : 'sq•ft n/a'}</span>
-                {/* {pricePerSqft(l) != null && (
-                    <span>{money(pricePerSqft(l))}/sqft</span>
-                )} */}
-                {/* {l.daysOnMarket != null && (
-                    <span>{l.daysOnMarket} days on market</span>
-                )} */}
+
             </div>
+            {l.selected && (
+                <div className="my-4 border-t border-gray-300">
+                </div>
+            )}
+            {l.selected && (
+                <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600">
+                    {hoaMonthly(l) > 0 && <span>HOA {money(hoaMonthly(l))}/mo</span>}
+                    <span>
+                        {l.bedrooms ?? '—'} bd · {l.bathrooms ?? '—'} ba
+                    </span>
+                    {pricePerSqft(l) != null && (
+                        <span>{money(pricePerSqft(l))}/sqft</span>
+                    )}
+                    {l.daysOnMarket != null && (
+                        <span>{l.daysOnMarket} days on market</span>
+                    )}
+                </div>
+            )}
+            {l.selected && (
+                <div className="mt-3 grid grid-cols-3 gap-x-4 gap-y-1 text-xs text-gray-600">
+                    <button
+                        className="rounded-full py-1 text-xs font-semibold text-white shadow-lg transition duration-300 bg-blue-600 hover:bg-blue-700"
+                    >
+                        Compare
+                    </button>
+                    <button
+                        className="rounded-full py-1 text-xs font-semibold text-white shadow-lg transition duration-300 bg-green-600 hover:bg-green-700"
+                    >
+                        Zillow
+                    </button>
+                    <button
+                        className="rounded-full py-1 text-xs font-semibold text-white shadow-lg transition duration-300 bg-red-600 hover:bg-red-700"
+                    >
+                        Remove
+                    </button>
+                </div>
+            )}
         </div>
     )
 }
