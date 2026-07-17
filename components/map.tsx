@@ -42,6 +42,15 @@ const maxZoom = 18;
 const minZoom = 2;
 const blockThreshold = 11;
 const subDivisions = 70;
+const AUTO_SWITCH_ZOOM = 11;
+
+// Shared visibility rules — used by both refresh (to gate heavy work)
+// and updateLayerVisibility (to add/remove layers)
+const heatIsVisible = (zoom: number, layer: string) =>
+    layer === "heatmap" || (layer === "default" && zoom >= AUTO_SWITCH_ZOOM);
+
+const choroplethIsVisible = (zoom: number, layer: string) =>
+    layer === "choropleth" || (layer === "default" && zoom < AUTO_SWITCH_ZOOM);
 
 
 // How to convert points to heatmap tuples
@@ -102,6 +111,13 @@ export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading,
         //padded bounds
         const padBounds = bounds.pad(1.0)
         setMapBounds(bounds)
+
+        // Heatmap is off: skip the fetch, grid, attach, and setLatLngs entirely.
+        // setMapBounds above is kept because the listings pane depends on it either way.
+        if (!heatIsVisible(zoom, activeLayerRef.current)) {
+            setLoading(false);
+            return;
+        }
     
         // If the zoom is past the threshold the raw data is grabbed from blocks dataset
         // Otherwise its grabbed from counties dataset
@@ -148,8 +164,6 @@ export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading,
         setLoading(false);
     };
 
-    const AUTO_SWITCH_ZOOM = 11;
-
     function updateLayerVisibility() {
         if (!mapRef.current || !heatRef.current || !choroplethRef.current) return;
         setLoading(true)
@@ -159,13 +173,8 @@ export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading,
 
         const layer = activeLayerRef.current;
 
-        const showHeat =
-            layer === "heatmap" ||
-            (layer === "default" && zoom >= AUTO_SWITCH_ZOOM);
-
-        const showChoropleth =
-            layer === "choropleth" ||
-            (layer === "default" && zoom < AUTO_SWITCH_ZOOM);
+        const showHeat = heatIsVisible(zoom, layer);
+        const showChoropleth = choroplethIsVisible(zoom, layer);
         
         console.log('showheat', showHeat, 'showchr', showChoropleth)
 
@@ -360,6 +369,16 @@ export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading,
 
     useEffect(() => {
         updateLayerVisibility();
+
+        // If toggling made the heatmap visible while stationary, repopulate it —
+        // otherwise it'd show stale/empty data until the next pan.
+        if (
+            mapRef.current &&
+            heatRef.current &&
+            heatIsVisible(mapRef.current.getZoom(), activeLayer)
+        ) {
+            refresh(mapRef.current, heatRef.current);
+        }
     }, [activeLayer]);
 
 return (
