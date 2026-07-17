@@ -94,7 +94,7 @@ export default function MapView() {
         // Filter + rank before building markers so pins match the listings pane.
         const ranked = prepareWithDefaults(listings)
         setListingData({listings: ranked})
-        setSidebarValue('listings')
+        setSidebarValue('listing')
         setSidebarTitle(cityRange[0][0])
         setMarkerPoints(ranked.map((listing: SaleListing) => {
             return {

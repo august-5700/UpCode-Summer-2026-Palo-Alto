@@ -2,6 +2,7 @@
 
 import type { GetListingsResult, SaleListing } from '@/utils/listings.types';
 import { PropertyListing } from './property-listing';
+import { useState } from 'react';
 
 interface ListingsViewerProps {
 	onListingSelect: (listing: SaleListing) => void;
@@ -10,8 +11,8 @@ interface ListingsViewerProps {
 	title: string;
 }
 
-export default function ListingsViewer({ onListingSelect, data, title }: ListingsViewerProps) {
-	const ranked = data?.listings ?? [];
+export default function ListingsViewer({ onListingSelect, onCompareListing, data, title }: ListingsViewerProps) {
+	const [ranked, setRanked] = useState<SaleListing[]>(data?.listings ?? []);
 
 	return (
 		<div className='w-76'>
