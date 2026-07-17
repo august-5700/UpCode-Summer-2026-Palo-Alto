@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="1f4d49d0-ec7a-4f87-8e4f-048b72b8521d" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/components/listings-viewer.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/listings-viewer.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/map-view.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/map-view.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/regional-overview.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/regional-overview.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/sidebar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/sidebar.tsx" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 3
+}]]></component>
+  <component name="ProjectId" id="3GcDnORw97wku1Po7Bv0c6DEXVQ" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main",
+    "last_opened_file_path": "/Users/augustwhite/Desktop/Transferred/Coding/UpCode-Summer-2026-Palo-Alto"
+  }
+}]]></component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-python-sdk-f2b7a9f6281b-6e1f45a539f7-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-253.29346.142" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="1f4d49d0-ec7a-4f87-8e4f-048b72b8521d" name="Changes" comment="" />
+      <created>1784262129859</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1784262129859</updated>
+    </task>
+    <servers />
+  </component>
+</project>

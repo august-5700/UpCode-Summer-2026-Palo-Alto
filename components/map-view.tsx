@@ -38,6 +38,7 @@ export default function MapView() {
         bbox: [number, number, number, number];
     }>();
     const [sidebarValue, setSidebarValue] = useState<SidebarValue>(null);
+    const [sidebarTitle, setSidebarTitle] = useState<string>('');
     const [enableListingsButton, setEnableListingButton] = useState<boolean>(false);
     const [loading, setLoading] = useState(true);
     const [markerPoints, setMarkerPoints] = useState<MarkerType[]>([]);
@@ -89,6 +90,8 @@ export default function MapView() {
         handleSelect(mapBounds.getCenter().lat, mapBounds.getCenter().lng, 'county', false)
     
         setListingData({listings})
+        setSidebarValue('listings')
+        setSidebarTitle(cityRange[0][0])
         setMarkerPoints(listings.map((listing: SaleListing) => {
             return {
                 lat: listing.latitude,
@@ -115,6 +118,7 @@ export default function MapView() {
         
         if (set) {
             setSidebarValue(level);
+            setSidebarTitle(data ? data.title : 'not found')
         }
     }, [comparisonSelectorActive]);
 
@@ -214,8 +218,9 @@ export default function MapView() {
                     case "block":
                         return regionalData ? (
                         <Sidebar
+                            title={sidebarTitle}
                             regionalData={regionalData}
-                            onClose={() => {setRegionalData(null);setSidebarValue(null)}}
+                            onClose={() => {setRegionalData(null);setSidebarValue(null);setSidebarTitle('')}}
                             comparisonSelectorActive={comparisonSelectorActive}
                             setComparisonSelectorActive={(value: boolean) => {
                                 setComparisonSelectorActive(value);
@@ -234,8 +239,9 @@ export default function MapView() {
                     case "county":
                         return regionalData ? (
                         <Sidebar
+                            title={sidebarTitle}
                             regionalData={regionalData}
-                            onClose={() => {setRegionalData(null);setSidebarValue(null)}}
+                            onClose={() => {setRegionalData(null);setSidebarValue(null);setSidebarTitle('')}}
                             comparisonSelectorActive={comparisonSelectorActive}
                             setComparisonSelectorActive={(value: boolean) => {
                                 setComparisonSelectorActive(value);
@@ -254,9 +260,10 @@ export default function MapView() {
                     case "listings":
                         return listingData && regionalData ? (
                         <Sidebar
+                            title={sidebarTitle}
                             regionalData={regionalData}
                             listingData={listingData}
-                            onClose={() => {setRegionalData(null);setSidebarValue(null)}}
+                            onClose={() => {setRegionalData(null);setSidebarValue(null);setSidebarTitle('')}}
                             onListingSelect={(listing: SaleListing) => handleListingSelect(listing)}
                             comparisonSelectorActive={comparisonSelectorActive}
                             setComparisonSelectorActive={(value: boolean) => {
@@ -284,10 +291,11 @@ export default function MapView() {
                     setMapCenter({lat: lat, lng: lng, bbox: bbox})
                     console.log('viewing listings')
                     setSidebarValue('listings')
+                    setSidebarTitle(item[0])
                     viewListings(item)
                 }}
             />
-            <Filters />
+            {/* <Filters /> */}
             <LayersToggle
                 value={activeLayer}
                 onValueChange={(value:string)=>{
@@ -300,7 +308,7 @@ export default function MapView() {
                 }}
             />
             <button
-                onClick={() => {if (enableListingsButton){console.log('button');handleViewListingBtn();setSidebarValue('listings')}}}
+                onClick={() => {if (enableListingsButton){console.log('button');handleViewListingBtn()}}}
                 // onClick={() => {setSidebarValue('listings')}} // always enabled for testing purposes. uncomment above line when done
                 className={cn("absolute right-4 bottom-4 z-100 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-lg  transition duration-300"
                 ,enableListingsButton ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 hover:bg-gray-500' )}
