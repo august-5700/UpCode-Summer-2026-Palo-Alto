@@ -14,6 +14,7 @@ import PropertyListingsSidebar from "./listings-viewer";
 import { cn } from "@/lib/utils";
 import { getListings, getListingsInArea } from "@/utils/listings";
 import { GetListingsResult, SaleListing } from "@/utils/listings.types";
+import { prepareWithDefaults } from "@/utils/listings/prepareListings";
 import citySearch from "@/utils/citySearch";
 import L from "leaflet";
 import { renderMarkers } from "@/utils/renderMarkers";
@@ -80,7 +81,8 @@ export default function MapView() {
             cityRange.forEach(async (location:[string, string]) => {
                 console.log('location: ', location)
                 const data = await getListings(location[0].trim(), location[1].trim(), 2000, 1000);
-                console.log("city listings", data)
+                const ranked = prepareWithDefaults(data.listings)
+                console.log("city listings", ranked)
             })
             
         }
@@ -88,11 +90,13 @@ export default function MapView() {
 
         const listings = await getListingsInArea(mapBounds.getWest(), mapBounds.getSouth(), mapBounds.getEast(), mapBounds.getNorth())
         handleSelect(mapBounds.getCenter().lat, mapBounds.getCenter().lng, 'county', false)
-    
-        setListingData({listings})
-        setSidebarValue('listing')
+
+        // Filter + rank before building markers so pins match the listings pane.
+        const ranked = prepareWithDefaults(listings)
+        setListingData({listings: ranked})
+        setSidebarValue('listings')
         setSidebarTitle(cityRange[0][0])
-        setMarkerPoints(listings.map((listing: SaleListing) => {
+        setMarkerPoints(ranked.map((listing: SaleListing) => {
             return {
                 lat: listing.latitude,
                 lng: listing.longitude,
@@ -183,7 +187,9 @@ export default function MapView() {
         setLoading(true)
         const listingData = await getListings(item[0], item[1], 2000, 1500);
         const regionalData = await getCountyByCityState(item)
-        setMarkerPoints(listingData.listings.map((listing: SaleListing) => {
+        // Filter + rank before building markers so pins match the listings pane.
+        const ranked = prepareWithDefaults(listingData.listings)
+        setMarkerPoints(ranked.map((listing: SaleListing) => {
             return {
             lat: listing.latitude,
             lng: listing.longitude,
@@ -191,7 +197,7 @@ export default function MapView() {
             highlighted: false
             }
         }));
-        setListingData(listingData);
+        setListingData({...listingData, listings: ranked});
         if (regionalData){
             setRegionalData([regionalData])
             setComparisonSelectorActive(false)
