@@ -66,7 +66,6 @@ const toHeatTuples = (points: any[]): HeatLatLngTuple[] => {
 
 
 
-
 export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading, setMapBounds, center, activeLayer, markerPoints }: MapProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const heatPointsRef = useRef<any[]>([]);
