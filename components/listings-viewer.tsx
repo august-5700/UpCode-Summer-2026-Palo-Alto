@@ -23,11 +23,12 @@ const pricePerSqft = (l: SaleListing) =>
 
 interface ListingsViewerProps {
 	onListingSelect: (listing: SaleListing) => void;
+    onCompareListing: (l: SaleListing) => void;
 	data: GetListingsResult;
     title: string;
 }
 
-export default function ListingsViewer({ onListingSelect, data, title }: ListingsViewerProps) {
+export default function ListingsViewer({ onListingSelect, onCompareListing, data, title }: ListingsViewerProps) {
 	const [minPpsf, setMinPpsf] = useState('');
 	const [maxPpsf, setMaxPpsf] = useState('');
 
@@ -42,7 +43,7 @@ export default function ListingsViewer({ onListingSelect, data, title }: Listing
 	};
 
 	// Filter + rank by HOA-adjusted yield in one pass (best first).
-	const ranked = prepareListings(data?.listings ?? [], [ppsfFilter].concat(DEFAULT_FILTERS), scoreListing, true);
+	const [ranked, setRanked] = useState<SaleListing[]>(prepareListings(data?.listings ?? [], [ppsfFilter].concat(DEFAULT_FILTERS), scoreListing, true));
 	const hidden = (data?.listings.length ?? 0) - ranked.length;
 	return (
 		<div className='w-76'>
@@ -111,7 +112,7 @@ export default function ListingsViewer({ onListingSelect, data, title }: Listing
 						</p>
 					)}
 					{ranked.map((l: SaleListing) => (
-                        <PropertyListing l={l} onListingSelect={onListingSelect} ranked={ranked} title={title} />
+                        <PropertyListing l={l} onListingSelect={onListingSelect} onCompareListing={onCompareListing} onRemoveListing={(l: SaleListing) => setRanked(ranked.filter(i => i.id != l.id))} ranked={ranked} title={title} />
 					))}
 				</div>
 			)}
