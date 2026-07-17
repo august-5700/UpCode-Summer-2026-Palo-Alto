@@ -26,7 +26,7 @@ type Hover = { block: any; x: number; y: number; countyName: string | null } | n
 const HOVER_DELAY = 1000; // ms of stillness before the tooltip shows
 const MOVE_THRESHOLD = 10; // px, moves smaller than this count as still (ignores jitter)
 
-type SidebarValue = null | 'block' | 'county' | 'listings' | 'comparison'
+type SidebarValue = null | 'block' | 'county' | 'listing' | 'comparison'
 
 export default function MapView() {
     const [mapBounds, setMapBounds] = useState<L.LatLngBounds>(new L.LatLngBounds([0, 1], [0, -1]))
@@ -94,7 +94,7 @@ export default function MapView() {
         // Filter + rank before building markers so pins match the listings pane.
         const ranked = prepareWithDefaults(listings)
         setListingData({listings: ranked})
-        setSidebarValue('listings')
+        setSidebarValue('listing')
         setSidebarTitle(cityRange[0][0])
         setMarkerPoints(ranked.map((listing: SaleListing) => {
             return {
@@ -106,9 +106,24 @@ export default function MapView() {
         }));
     }, [mapBounds])
 
-    const handleSelect = useCallback(async (lat: number, lng: number, level: "county" | "block", set: boolean) => {
+    const handleSelect = useCallback(async (lat: number, lng: number, level: "county" | "block" | "listing", set: boolean, listings?:SaleListing[]) => {
         console.log(comparisonSelectorActive)
-        const data = level === "block" ? await getBlockByCoords(lat, lng) : await getCountyByCoords(lat, lng);
+        const data = await (async () => {
+            switch (level) {
+                case 'block':
+                    return await getBlockByCoords(lat, lng);
+                case 'county':
+                    return await getCountyByCoords(lat, lng);
+                default:
+                    return null;
+            }
+        })();
+
+        if (!data && level == 'listing' && listings) {
+            // select a listing
+        }
+
+
         if (data && !regionalData?.includes(data)) {
             if (comparisonSelectorActiveRef.current) {
                 console.log('adding to comparison. regionalData will be: ', (regionalData: any) => [...(regionalData ?? []), data])
@@ -219,84 +234,33 @@ export default function MapView() {
                 setMapBounds = {setMapBounds}
                 markerPoints={markerPoints}
             />
-            {(() => {
-                switch (sidebarValue) {
-                    case "block":
-                        return regionalData ? (
-                        <Sidebar
-                            title={sidebarTitle}
-                            regionalData={regionalData}
-                            onClose={() => {setRegionalData(null);setSidebarValue(null);setSidebarTitle('')}}
-                            comparisonSelectorActive={comparisonSelectorActive}
-                            setComparisonSelectorActive={(value: boolean) => {
-                                setComparisonSelectorActive(value);
-                                if (value) {
-                                    setShowComparisonToast(true);
-                                }
-                            }}
-                            onRemoveRegion={(region: TractData) =>
-                                setRegionalData(prev =>
-                                    prev ? prev.filter(r => r !== region) : null
-                                )
-                            }
-                        />
-                        ) : null;
-
-                    case "county":
-                        return regionalData ? (
-                        <Sidebar
-                            title={sidebarTitle}
-                            regionalData={regionalData}
-                            onClose={() => {setRegionalData(null);setSidebarValue(null);setSidebarTitle('')}}
-                            comparisonSelectorActive={comparisonSelectorActive}
-                            setComparisonSelectorActive={(value: boolean) => {
-                                setComparisonSelectorActive(value);
-                                if (value) {
-                                    setShowComparisonToast(true);
-                                }
-                            }}
-                            onRemoveRegion={(region: TractData) =>
-                                setRegionalData(prev =>
-                                    prev ? prev.filter(r => r !== region) : null
-                                )
-                            }
-                        />
-                        ) : null;
-
-                    case "listings":
-                        return listingData && regionalData ? (
-                        <Sidebar
-                            title={sidebarTitle}
-                            regionalData={regionalData}
-                            listingData={listingData}
-                            onClose={() => {setRegionalData(null);setSidebarValue(null);setSidebarTitle('')}}
-                            onListingSelect={(listing: SaleListing) => handleListingSelect(listing)}
-                            comparisonSelectorActive={comparisonSelectorActive}
-                            setComparisonSelectorActive={(value: boolean) => {
-                                setComparisonSelectorActive(value);
-                                if (value) {
-                                    setShowComparisonToast(true);
-                                }
-                            }}
-                            onRemoveRegion={(region: TractData) =>
-                                setRegionalData(prev =>
-                                    prev ? prev.filter(r => r !== region) : null
-                                )
-                            }
-                        />
-                        ) : null
-
-                    default:
-                        return null;
+            <Sidebar
+                title={sidebarTitle}
+                regionalData={regionalData}
+                listingData={listingData}
+                onClose={() => {setRegionalData(null);setSidebarValue(null);setSidebarTitle('')}}
+                onListingSelect={(listing: SaleListing) => handleListingSelect(listing)}
+                comparisonSelectorActive={comparisonSelectorActive}
+                setComparisonSelectorActive={(value: boolean) => {
+                    setComparisonSelectorActive(value);
+                    if (value) {
+                        setShowComparisonToast(true);
+                    }
+                }}
+                onRemoveRegion={(region: TractData) =>
+                    setRegionalData(prev =>
+                        prev ? prev.filter(r => r !== region) : null
+                    )
                 }
-            })()}
+            />
+
             
             {hover && <MapTooltip block={hover.block} x={hover.x} y={hover.y} countyName={hover.countyName} />}
             <Search 
                 handleSubmit={(lat, lng, bbox, item) => {
                     setMapCenter({lat: lat, lng: lng, bbox: bbox})
                     console.log('viewing listings')
-                    setSidebarValue('listings')
+                    setSidebarValue('listing')
                     setSidebarTitle(item[0])
                     viewListings(item)
                 }}

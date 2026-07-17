@@ -14,7 +14,7 @@ import { SaleListing } from "@/utils/listings.types";
 import { pricePerSqft } from "@/utils/listings/listingFilters";
 import { GeoData } from "@/utils/types";
 
-import { Search as SearchIcon } from 'lucide-react';
+import { ArrowRightLeft, DollarSign, Search as SearchIcon, X } from 'lucide-react';
 import { useState } from "react";
 
 const money = (v: number | null) => (v == null ? '—' : `$${Math.round(v).toLocaleString()}`);
@@ -36,6 +36,8 @@ const netYield = (l: SaleListing): number | null => {
 interface PropertyListingProps {
         l: SaleListing;
         onListingSelect: (listing: SaleListing) => void;
+        onCompareListing: (listing: SaleListing) => void;
+        onRemoveListing: (listing: SaleListing) => void;
         ranked: SaleListing[]
         title: string
 
@@ -43,7 +45,7 @@ interface PropertyListingProps {
 
 
 
-export function PropertyListing({l, onListingSelect, ranked, title}: PropertyListingProps) {
+export function PropertyListing({l, onListingSelect, onCompareListing, onRemoveListing, ranked, title}: PropertyListingProps) {
 
     return (
         <div
@@ -101,21 +103,26 @@ export function PropertyListing({l, onListingSelect, ranked, title}: PropertyLis
                 </div>
             )}
             {l.selected && (
-                <div className="mt-3 grid grid-cols-3 gap-x-4 gap-y-1 text-xs text-gray-600">
+                <div className="mt-3 grid grid-cols-6 text-xs text-gray-600 gap-x-3">
                     <button
-                        className="rounded-full py-1 text-xs font-semibold text-white shadow-lg transition duration-300 bg-blue-600 hover:bg-blue-700"
+                        className="flex col-span-3 items-center justify-center rounded-full py-1 px-2 gap-x-1 text-xs font-semibold text-white shadow-lg transition duration-300 bg-blue-600 hover:bg-blue-700"
+                        onClick={()=>onCompareListing(l)}
                     >
+                        <ArrowRightLeft className="h-3 w-3"/>
                         Compare
                     </button>
                     <button
-                        className="rounded-full py-1 text-xs font-semibold text-white shadow-lg transition duration-300 bg-green-600 hover:bg-green-700"
+                        // ZILLOW PLUGIN ONCLICK
+                        className="flex col-span-2 items-center justify-center rounded-full py-1 px-2 gap-x-1 text-xs font-semibold text-white shadow-lg transition duration-300 bg-green-600 hover:bg-green-700"
                     >
+                        <DollarSign className='h-3 w-3' />
                         Zillow
                     </button>
                     <button
-                        className="rounded-full py-1 text-xs font-semibold text-white shadow-lg transition duration-300 bg-red-600 hover:bg-red-700"
+                        onClick={()=>onRemoveListing(l)}
+                        className="flex col-span-1 items-center justify-center rounded-full p-1 gap-x-1 text-xs font-semibold text-white shadow-lg transition duration-300 bg-red-600 hover:bg-red-700"
                     >
-                        Remove
+                        <X className='h-4 w-4' />
                     </button>
                 </div>
             )}

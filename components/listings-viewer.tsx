@@ -2,15 +2,17 @@
 
 import type { GetListingsResult, SaleListing } from '@/utils/listings.types';
 import { PropertyListing } from './property-listing';
+import { useState } from 'react';
 
 interface ListingsViewerProps {
 	onListingSelect: (listing: SaleListing) => void;
+    onCompareListing: (l: SaleListing) => void;
 	data: GetListingsResult;
 	title: string;
 }
 
-export default function ListingsViewer({ onListingSelect, data, title }: ListingsViewerProps) {
-	const ranked = data?.listings ?? [];
+export default function ListingsViewer({ onListingSelect, onCompareListing, data, title }: ListingsViewerProps) {
+	const [ranked, setRanked] = useState<SaleListing[]>(data?.listings ?? []);
 
 	return (
 		<div className='w-76'>
@@ -39,7 +41,7 @@ export default function ListingsViewer({ onListingSelect, data, title }: Listing
 						</p>
 					)}
 					{ranked.map((l: SaleListing) => (
-						<PropertyListing key={l.id} l={l} onListingSelect={onListingSelect} ranked={ranked} title={title} />
+                        <PropertyListing l={l} onListingSelect={onListingSelect} onCompareListing={onCompareListing} onRemoveListing={(l: SaleListing) => setRanked(ranked.filter(i => i.id != l.id))} ranked={ranked} title={title} />
 					))}
 				</div>
 			)}
