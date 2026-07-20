@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRightLeft, Plus, X } from 'lucide-react';
+import { ArrowRightLeft, CircleQuestionMark, Plus, X } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import RegionalOverview from './regional-overview';
@@ -12,6 +12,8 @@ import { Dispatch, SetStateAction, useState } from 'react';
 import { motion } from 'framer-motion';
 import ComparisonSelector from './comparison-selector';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
+import { Popover, PopoverContent, PopoverDescription, PopoverHeader, PopoverTitle, PopoverTrigger } from './ui/popover';
 
 interface SidebarProps {
     title: string;
@@ -117,14 +119,32 @@ export default function Sidebar({
                                         </div>
                                     ) : (
                                         <div className="flex items-center gap-2 pl-4">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="rounded-full text-gray-400 hover:text-gray-900"
-                                                onClick={() => {setComparisonSelectorActive(true)}}
-                                            >
-                                                <ArrowRightLeft className="h-5 w-5" />
-                                            </Button>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="rounded-full text-gray-400 hover:text-gray-900"
+                                                        onClick={() => {setComparisonSelectorActive(true)}}
+                                                    >
+                                                        <ArrowRightLeft className="h-5 w-5" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="right" className="z-500 bg-white text-gray-800">
+                                                    <Popover>
+                                                        <PopoverTrigger>
+                                                            <CircleQuestionMark scale='0.1'/>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="z-500">
+                                                            <PopoverHeader>
+                                                                <PopoverTitle>Compare Counties And Listings</PopoverTitle>
+                                                                <PopoverDescription>Select areas you are interested in to compare metrics</PopoverDescription>
+                                                            </PopoverHeader>
+                                                        </PopoverContent>
+                                                    </Popover>
+                                                    <p>Comparison View</p>
+                                                </TooltipContent>
+                                            </Tooltip>
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
