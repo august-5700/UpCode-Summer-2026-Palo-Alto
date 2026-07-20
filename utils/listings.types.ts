@@ -25,6 +25,7 @@ export interface SaleListing {
   /** The complete, unmodified RentCast listing object. */
   raw: Record<string, unknown>;
   selected: boolean;
+  compared: boolean;
 }
 
 export interface GetListingsResult {

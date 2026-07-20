@@ -14,8 +14,9 @@ import ComparisonSelector from './comparison-selector';
 import { cn } from '@/lib/utils';
 
 interface SidebarProps {
+    title: string;
 	regionalData: TractData[] | null;
-	listingData?: GetListingsResult;
+	listingData: GetListingsResult | null;
 	onClose: () => void;
 	onListingSelect?: (listing: SaleListing) => void;
     comparisonSelectorActive: boolean;
@@ -24,6 +25,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({
+    title,
 	regionalData,
 	listingData,
 	onClose,
@@ -38,12 +40,13 @@ export default function Sidebar({
 		? regionalData.length 
 		: 0;
 
+    const listingsComparedData = listingData?.listings.filter((l: SaleListing) => l.compared) ?? []
+    
 
 	return (
         <motion.div
             layout
             initial={{ opacity:0, x:"var(--entry-distance-x)" }} 
-            layout
             animate={{ opacity:1, x:"0" }}
             exit={{ opacity:0, x:"var(--entry-distance-x)" }}
             transition = {{ duration:0.3 }}
@@ -52,7 +55,7 @@ export default function Sidebar({
             )}
         >
             <Card
-                className='min-h-full w-full flex flex-col gap-6 rounded-3xl border border-white/40 bg-white/50 p-8 shadow-2xl backdrop-blur-2xl backdrop-saturate-150'
+                className='min-h-full max-h-187.5 w-full flex flex-col rounded-3xl border border-white/40 bg-white/50 p-6 shadow-2xl backdrop-blur-2xl backdrop-saturate-150'
                 
             >
                 {/* Dynamic Header */}
@@ -89,17 +92,17 @@ export default function Sidebar({
                 )}
 
                 {/* Panels Layout Container */}
-                <div className="flex flex-row h-full w-full min-h-0 min-w-0 space-x-5 overflow-x-auto">
+                <div className="flex flex-row h-full w-full min-h-0 min-w-0 overflow-x-auto space-x-12">
                     {/* Dynamic Slots for Regions with Listing Viewer Layout */}
-                    {regionalData &&
+                    {regionalData && !(listingsComparedData.length > 0) &&
                         regionalData.map((region: TractData, index: number) => (
                             <div
-                                key={region.title || `region-${index}`}
-                                className={`space-y-4 h-full min-h-0 w-max shrink-0 overflow-y-auto overflow-x-clip px-2 `}
+                                key={title || `region-${index}`}
+                                className={`space-y-4 h-full min-h-0 w-max shrink-0 overflow-y-auto overflow-x-clip`}
                             >
                                 <div className="flex items-start justify-between">
                                     <h2 className="text-2xl font-bold tracking-tight text-gray-900">
-                                        {region.title}
+                                        {title}
                                     </h2>
                                     {baseMultiplier > 1 ? (
                                         <div className="flex items-center gap-2">
@@ -113,7 +116,7 @@ export default function Sidebar({
                                             </Button>
                                         </div>
                                     ) : (
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 pl-4">
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
@@ -135,13 +138,27 @@ export default function Sidebar({
                                 </div>
                                 <RegionalOverview data={region} />
                                 {listingData && onListingSelect && (
-                                    <ListingsViewer data={listingData} onListingSelect={onListingSelect} />
+                                    <ListingsViewer 
+                                        title={title} 
+                                        data={listingData} 
+                                        onListingSelect={onListingSelect} 
+                                        onCompareListing={
+                                            (l: SaleListing) => {
+                                                l.compared = false
+                                                setComparisonSelectorActive(true)
+                                            }
+                                        }
+                                    />
                                 )}
                                 {!listingData && (
                                     <RegionalDetails data={region} />
                                 )}
+
                             </div>
                         ))}
+                    {listingsComparedData.length > 0 && (
+                        <div>{listingsComparedData[0].address ?? ''}</div>
+                    )}
                 </div>
             </Card>
         </motion.div>

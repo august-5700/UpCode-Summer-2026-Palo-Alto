@@ -8,6 +8,10 @@
  * eliminate it.
  */
 
+import type { SaleListing } from "@/utils/listings.types";
+import { DEFAULT_FILTERS } from "./listingFilters";
+import { scoreListing } from "./listingScore";
+
 /** Predicate over a listing. Return true to KEEP, false to eliminate. */
 export type ListingFilter<T> = (listing: T) => boolean;
 
@@ -49,4 +53,26 @@ export function prepareListings<T>(
 ): T[] {
   const filtered = filterListings(listings, filters);
   return sortListings(filtered, score, descending);
+}
+
+/**
+ * THE call every view should use. Applies DEFAULT_FILTERS + the default score,
+ * sorted best-first — so filtering, ranking, and sort direction stay identical
+ * everywhere. Pass `extraFilters` to layer manual filters on top of the
+ * baseline; the defaults still apply.
+ *
+ * Note: unlike the generic helpers above, this is intentionally bound to
+ * SaleListing — it's the opinionated entry point, so it pulls in the concrete
+ * DEFAULT_FILTERS and scoreListing.
+ */
+export function prepareWithDefaults(
+  listings: readonly SaleListing[],
+  extraFilters: ListingFilter<SaleListing>[] = [],
+): SaleListing[] {
+  return prepareListings(
+    listings,
+    [...DEFAULT_FILTERS, ...extraFilters],
+    scoreListing,
+    true,
+  );
 }

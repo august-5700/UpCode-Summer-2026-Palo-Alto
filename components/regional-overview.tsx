@@ -1,6 +1,7 @@
 "use client";
 
-import { TractData } from "@/utils/api";
+import { TractData } from "@/utils/types";
+
 
 interface RegionalOverviewProps {
     data: TractData
@@ -8,7 +9,7 @@ interface RegionalOverviewProps {
 
 export default function RegionalOverview({data}: RegionalOverviewProps){
     return (
-      <section className="flex flex-col items-center">
+      <section className="flex flex-col items-center w-70">
         <p className="self-start text-xs font-semibold uppercase tracking-wider text-gray-500">
           HeatMap Score
         </p>
