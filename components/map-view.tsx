@@ -293,12 +293,13 @@ export default function MapView() {
                 }}
             />
             <button
-                onClick={() => {if (enableListingsButton){console.log('button');handleViewListingBtn()}}}
+                disabled={!enableListingsButton || fetchingListings}
+                onClick={() => {if (enableListingsButton && !fetchingListings){console.log('button');handleViewListingBtn()}}}
                 // onClick={() => {setSidebarValue('listings')}} // always enabled for testing purposes. uncomment above line when done
                 className={cn("absolute right-4 bottom-4 z-100 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-lg  transition duration-300"
-                ,enableListingsButton ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 hover:bg-gray-500' )}
+                ,(enableListingsButton && !fetchingListings) ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 hover:bg-gray-500 cursor-not-allowed' )}
             >
-                View Listings
+                {fetchingListings ? 'Fetching…' : 'View Listings'}
             </button>
         </>
     );
