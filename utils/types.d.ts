@@ -14,6 +14,7 @@ export type MarkerType = {
     [key: string]: any;
 };
 
+export type SidebarValue = null | 'block' | 'county' | 'listing';
 
 export type Metric = {
   label: string;

@@ -18,15 +18,13 @@ import { prepareWithDefaults } from "@/utils/listings/prepareListings";
 import citySearch from "@/utils/citySearch";
 import L from "leaflet";
 import { renderMarkers } from "@/utils/renderMarkers";
-import { MarkerType, TractData } from "@/utils/types";
+import { MarkerType, SidebarValue, TractData } from "@/utils/types";
 import ComparisonSelectorToast from "./comparison-selector";
 
 type Hover = { block: any; x: number; y: number; countyName: string | null } | null;
 
 const HOVER_DELAY = 1000; // ms of stillness before the tooltip shows
 const MOVE_THRESHOLD = 10; // px, moves smaller than this count as still (ignores jitter)
-
-type SidebarValue = null | 'block' | 'county' | 'listing' | 'comparison'
 
 export default function MapView() {
     const [mapBounds, setMapBounds] = useState<L.LatLngBounds>(new L.LatLngBounds([0, 1], [0, -1]))
@@ -121,8 +119,25 @@ export default function MapView() {
 
         if (!data && level == 'listing' && listings) {
             // select a listing
+            let closest_listing_idx = 0
+            let closest_dist = 10000000
+            listings.forEach((listing: SaleListing) => {
+                const dLat = Math.abs(listing.latitude ?? 0 - lat)
+                const dLng = Math.abs(listing.longitude ?? 0 - lng)
+                const dist = Math.sqrt((dLat ** 2) + (dLng ** 2))
+                if (dist < closest_dist){
+                    closest_dist = dist
+                    closest_listing_idx = listings.indexOf(listing)
+                }
+            })
+            console.log('closest listing', listings[closest_listing_idx].address)
+            listings[closest_listing_idx].selected = true
+            listings[closest_listing_idx].compared = true
         }
 
+        if (level != 'listing'){
+            setMarkerPoints([])
+        }
 
         if (data && !regionalData?.includes(data)) {
             if (comparisonSelectorActiveRef.current) {
@@ -223,7 +238,12 @@ export default function MapView() {
                 <ComparisonSelectorToast item={sidebarValue ?? 'item'} onFinished={()=>setShowComparisonToast(false)}/>
             )}
             <Map 
-                onSelectCoords={(lat, lng, level) => handleSelect(lat, lng, level, true)}
+                onSelectCoords={(lat, lng, level) => {
+                    console.log('sidebarValue', sidebarValue);
+                    (sidebarValue && comparisonSelectorActiveRef.current == true) ? 
+                    handleSelect(lat, lng, sidebarValue, true) : 
+                    handleSelect(lat, lng, level, true)
+                }}
                 onHover={handleHover} 
                 onZoomChange={(zoom: number) => {
                     setEnableListingButton(zoom > ENABLE_LISTINGS_BUTTON_LEVEL ? true : false)
@@ -234,11 +254,13 @@ export default function MapView() {
                 setMapBounds = {setMapBounds}
                 markerPoints={markerPoints}
             />
+            
             <Sidebar
                 title={sidebarTitle}
                 regionalData={regionalData}
                 listingData={listingData}
-                onClose={() => {setRegionalData(null);setSidebarValue(null);setSidebarTitle('')}}
+                sidebarValue={sidebarValue}
+                onClose={() => {setRegionalData(null);setSidebarTitle('')}}
                 onListingSelect={(listing: SaleListing) => handleListingSelect(listing)}
                 comparisonSelectorActive={comparisonSelectorActive}
                 setComparisonSelectorActive={(value: boolean) => {

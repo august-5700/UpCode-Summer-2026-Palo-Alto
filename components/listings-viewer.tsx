@@ -34,7 +34,7 @@ export default function ListingsViewer({ onListingSelect, onCompareListing, data
 
 			{/* Results */}
 			{data && (
-				<div className="w-max -mx-2 grid grid-cols-1 gap-2 overflow-y-auto px-2">
+				<div className="w-74 -mx-2 grid grid-cols-1 gap-2 overflow-y-auto px-2">
 					{ranked.length === 0 && (
 						<p className="py-8 text-center text-sm text-gray-400">
 							No listings returned. Try a denser city or raise the limit.

@@ -7,7 +7,7 @@ import RegionalOverview from './regional-overview';
 import RegionalDetails from './regional-details';
 import { GetListingsResult, SaleListing } from '@/utils/listings.types';
 import ListingsViewer from './listings-viewer';
-import { TractData } from '@/utils/types';
+import { SidebarValue, TractData } from '@/utils/types';
 import { Dispatch, SetStateAction, useState } from 'react';
 import { motion } from 'framer-motion';
 import ComparisonSelector from './comparison-selector';
@@ -17,6 +17,7 @@ interface SidebarProps {
     title: string;
 	regionalData: TractData[] | null;
 	listingData: GetListingsResult | null;
+    sidebarValue: SidebarValue;
 	onClose: () => void;
 	onListingSelect?: (listing: SaleListing) => void;
     comparisonSelectorActive: boolean;
@@ -28,6 +29,7 @@ export default function Sidebar({
     title,
 	regionalData,
 	listingData,
+    sidebarValue,
 	onClose,
 	onListingSelect,
     comparisonSelectorActive,
@@ -58,108 +60,116 @@ export default function Sidebar({
                 className='min-h-full max-h-187.5 w-full flex flex-col rounded-3xl border border-white/40 bg-white/50 p-6 shadow-2xl backdrop-blur-2xl backdrop-saturate-150'
                 
             >
-                {/* Dynamic Header */}
-                {baseMultiplier > 1 && (
-                    <div className="flex items-start justify-between">
-                        <h2 className="text-2xl font-bold tracking-tight text-gray-900">
-                            Comparison
-                        </h2>
-                        <div className="flex items-center gap-2">
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="rounded-full text-gray-400 hover:text-gray-900"
-                                onClick={() => {setComparisonSelectorActive(true)}}
-                            >
-                                {regionalData && (
-                                    regionalData.length > 1 ? (
-                                        <Plus className="h-5 w-5" />
-                                    ) : (
-                                        <ArrowRightLeft className="h-5 w-5" />
-                                    )
-                                )}
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="rounded-full text-gray-400 hover:text-gray-900"
-                                onClick={onClose}
-                            >
-                                <X className="h-5 w-5" />
-                            </Button>
-                        </div>
-                    </div>
+                {!sidebarValue && (
+                    <p className='text-sm italic text-gray-500'>
+                        Select properties, counties, or blocks to view them here in the sidebar
+                    </p>
                 )}
-
-                {/* Panels Layout Container */}
-                <div className="flex flex-row h-full w-full min-h-0 min-w-0 overflow-x-auto space-x-12">
-                    {/* Dynamic Slots for Regions with Listing Viewer Layout */}
-                    {regionalData && !(listingsComparedData.length > 0) &&
-                        regionalData.map((region: TractData, index: number) => (
-                            <div
-                                key={title || `region-${index}`}
-                                className={`space-y-4 h-full min-h-0 w-max shrink-0 overflow-y-auto overflow-x-clip`}
-                            >
-                                <div className="flex items-start justify-between">
-                                    <h2 className="text-2xl font-bold tracking-tight text-gray-900">
-                                        {title}
-                                    </h2>
-                                    {baseMultiplier > 1 ? (
-                                        <div className="flex items-center gap-2">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="rounded-full text-gray-400 hover:text-gray-900"
-                                                onClick={()=>onRemoveRegion(region)}
-                                            >
-                                                <X className="h-5 w-5" />
-                                            </Button>
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center gap-2 pl-4">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="rounded-full text-gray-400 hover:text-gray-900"
-                                                onClick={() => {setComparisonSelectorActive(true)}}
-                                            >
+                {sidebarValue && (
+                    <>
+                        {/* Dynamic Header */}
+                        {baseMultiplier > 1 && (
+                            <div className="flex items-start justify-between">
+                                <h2 className="text-2xl font-bold tracking-tight text-gray-900">
+                                    Comparison
+                                </h2>
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="rounded-full text-gray-400 hover:text-gray-900"
+                                        onClick={() => {setComparisonSelectorActive(true)}}
+                                    >
+                                        {regionalData && (
+                                            regionalData.length > 1 ? (
+                                                <Plus className="h-5 w-5" />
+                                            ) : (
                                                 <ArrowRightLeft className="h-5 w-5" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="rounded-full text-gray-400 hover:text-gray-900"
-                                                onClick={onClose}
-                                            >
-                                                <X className="h-5 w-5" />
-                                            </Button>
-                                        </div>
-                                    )}
+                                            )
+                                        )}
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="rounded-full text-gray-400 hover:text-gray-900"
+                                        onClick={onClose}
+                                    >
+                                        <X className="h-5 w-5" />
+                                    </Button>
                                 </div>
-                                <RegionalOverview data={region} />
-                                {listingData && onListingSelect && (
-                                    <ListingsViewer 
-                                        title={title} 
-                                        data={listingData} 
-                                        onListingSelect={onListingSelect} 
-                                        onCompareListing={
-                                            (l: SaleListing) => {
-                                                l.compared = false
-                                                setComparisonSelectorActive(true)
-                                            }
-                                        }
-                                    />
-                                )}
-                                {!listingData && (
-                                    <RegionalDetails data={region} />
-                                )}
-
                             </div>
-                        ))}
-                    {listingsComparedData.length > 0 && (
-                        <div>{listingsComparedData[0].address ?? ''}</div>
-                    )}
-                </div>
+                        )}
+                        {/* Panels Layout Container */}
+                        <div className="flex flex-row h-full w-full min-h-0 min-w-0 overflow-x-auto space-x-12">
+                            {/* Dynamic Slots for Regions with Listing Viewer Layout */}
+                            {regionalData &&
+                                regionalData.map((region: TractData, index: number) => (
+                                    <div
+                                        key={title || `region-${index}`}
+                                        className={`space-y-4 h-full min-h-0 w-70 shrink-0 overflow-y-auto overflow-x-clip`}
+                                    >
+                                        <div className="flex items-start justify-between w-70">
+                                            <h2 className="text-2xl font-bold tracking-tight text-gray-900">
+                                                {title}
+                                            </h2>
+                                            {baseMultiplier > 1 ? (
+                                                <div className="flex items-center gap-2">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="rounded-full text-gray-400 hover:text-gray-900"
+                                                        onClick={()=>onRemoveRegion(region)}
+                                                    >
+                                                        <X className="h-5 w-5" />
+                                                    </Button>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-2 pl-4">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="rounded-full text-gray-400 hover:text-gray-900"
+                                                        onClick={() => {setComparisonSelectorActive(true)}}
+                                                    >
+                                                        <ArrowRightLeft className="h-5 w-5" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="rounded-full text-gray-400 hover:text-gray-900"
+                                                        onClick={onClose}
+                                                    >
+                                                        <X className="h-5 w-5" />
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <RegionalOverview data={region} />
+                                        { sidebarValue == 'listing' && listingData && onListingSelect && (
+                                            <ListingsViewer 
+                                                title={title} 
+                                                data={listingData} 
+                                                onListingSelect={onListingSelect} 
+                                                onCompareListing={
+                                                    (l: SaleListing) => {
+                                                        l.compared = false
+                                                        setComparisonSelectorActive(true)
+                                                    }
+                                                }
+                                            />
+                                        )}
+                                        {sidebarValue != 'listing' && (
+                                            <RegionalDetails data={region} />
+                                        )}
+
+                                    </div>
+                                ))}
+                            {listingsComparedData.length > 0 && (
+                                <div>{listingsComparedData[0].address ?? ''}</div>
+                            )}
+                        </div>
+                    </>
+                )}
             </Card>
         </motion.div>
 	);
