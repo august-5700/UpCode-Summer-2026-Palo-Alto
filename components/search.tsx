@@ -8,10 +8,16 @@ import {
   ComboboxItem,
   ComboboxList,
 } from "@/components/ui/combobox"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { getResultFromAddressAutocomplete } from "@/utils/api";
 import { GeoData } from "@/utils/types";
+import { Popover,PopoverTrigger,PopoverContent, PopoverHeader, PopoverTitle, PopoverDescription } from "./ui/popover";
 
-import { Search as SearchIcon } from 'lucide-react';
+import { CircleQuestionMark, Search as SearchIcon } from 'lucide-react';
 import { useState } from "react";
 
 
@@ -52,25 +58,44 @@ export function Search({handleSubmit}: SearchProps) {
 
   return (
     <Combobox items={menu}>
-        <ComboboxInput placeholder="Search for a county"
-        className='absolute top-4 left-6 z-100
-        h-11 w-64 px-4
-        rounded-full
-        border border-white/40
-        bg-white/50
-        text-sm/4 text-gray-900 placeholder-gray-500
-        shadow-xl
-        backdrop-blur-2xl backdrop-saturate-150'
-        onChange={(e) => handleSearchChange(e.target.value)}
-        onKeyDown={(event)=>{
-          console.log('key pressed')
-          if (event.key == 'Enter'){
-            console.log('enter pressed')
-            handleSubmit(menu[0].lat, menu[0].lng, menu[0].bbox, menu[0].name.split(', '))
-          }
-        }} 
-    />
-
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <ComboboxInput placeholder="Search for a city or county"
+          className='absolute top-4 left-6 z-100
+          h-11 w-64 px-4
+          rounded-full
+          border border-white/40
+          bg-white/50
+          text-sm/4 text-gray-900 placeholder-gray-500
+          shadow-xl
+          backdrop-blur-2xl backdrop-saturate-150'
+          onChange={(e) => handleSearchChange(e.target.value)}
+          onKeyDown={(event)=>{
+            console.log('key pressed')
+            if (event.key == 'Enter'){
+              console.log('enter pressed')
+              handleSubmit(menu[0].lat, menu[0].lng, menu[0].bbox, menu[0].name.split(', '))
+            }
+          }} 
+      />
+      </TooltipTrigger>
+      <TooltipContent side='right' className="bg-white text-gray-800 ml-10">
+          <p >Search</p>
+          <Popover>
+            <PopoverTrigger>
+                <CircleQuestionMark scale='0.1'/>
+            </PopoverTrigger>
+            <PopoverContent side='bottom' className='mt-3'>
+                <PopoverHeader>
+                    <PopoverTitle>Locate Cities And Counties</PopoverTitle>
+                    <PopoverDescription className='text-xs'>
+                        Search for cities and counties you are interested in. When searching for cities, listings in the area will be automatically pulled up
+                    </PopoverDescription>
+                </PopoverHeader>
+            </PopoverContent>
+          </Popover>
+      </TooltipContent>
+    </Tooltip>
       <ComboboxContent className='absolute top-3 -left-4 z-100 w-64 rounded-2xl border border-white/40 bg-white/50 text-gray-900 shadow-xl backdrop-blur-2xl backdrop-saturate-150'>
         <ComboboxEmpty className='text-gray-900'>No items found.</ComboboxEmpty>
         <ComboboxList className='text-gray-900'>
