@@ -31,67 +31,92 @@ function getPoints(bottomLeft: LatLngTuple, topRight: LatLngTuple, horizontal: n
     return lists.sort((a, b) => d2(a) - d2(b))
 }
 
-// export default async function citySearch(
-//   bottomLeft: LatLngTuple,
-//   topRight: LatLngTuple
-// ): Promise<[string, string][]> {
-//   const url = `https://api.geonames.org/citiesJSON?north=${topRight[0]}&south=${bottomLeft[0]}&east=${topRight[1]}&west=${bottomLeft[1]}&maxRows=${CITIES_TO_FETCH}&username=tcspa`;
-//     console.log("url", url)
-//   try {
-//     const response = await fetch(url);
-//     const data = await response.json();
-//     return data.geonames.map(
-//       (c: any): [string, string] => [c.name, STATE_ABBR[c.adminName1] ?? c.adminCode1]
-//     );
-//   } catch (e) {
-//     console.error(e);
-//     return [];
-//   }
-// }
 
-export default async function citySearch(bottomLeft: LatLngTuple, topRight: LatLngTuple):Promise<[string, string][]> {
-    const points = getPoints(bottomLeft, topRight, 3, 3)
-    //console.log("Center: ", [(bottomLeft[0] + topRight[0]) / 2, (bottomLeft[1] + topRight[1]) / 2],"Test Points: ", testPoints)
-    // console.log("Point: ", [(bottomLeft[0] + topRight[0]) / 2, (bottomLeft[1] + topRight[1]) / 2])
-    //for (const point of testPoints) {
-        //console.log("Point: ", [(bottomLeft[0] + topRight[0]) / 2, (bottomLeft[1] + topRight[1]) / 2])
-    //}
-    let seenAddresses:[string, string][] = [];
+export default async function citySearch(
+  bottomLeft: LatLngTuple,
+  topRight: LatLngTuple
+): Promise<[string, string][]> {
+  const center: LatLngTuple = [
+    (bottomLeft[0] + topRight[0]) / 2,
+    (bottomLeft[1] + topRight[1]) / 2,
+  ];
+
+  const latSpan = Math.abs(topRight[0] - bottomLeft[0]);
+  const lngSpan = Math.abs(topRight[1] - bottomLeft[1]);
+  const radius = (Math.max(latSpan, lngSpan) * 111) / 2;
+
+  const url = `https://photon.komoot.io/reverse?lon=${center[1]}&lat=${center[0]}&radius=${radius}&layer=city&limit=${CITIES_TO_FETCH * 3}`;
+
+  const seenAddresses: [string, string][] = [];
+
+  try {
+    console.log(url);
+    const response = await fetch(url);
+    const data = await response.json();
+    if (!data.features?.length) return seenAddresses;
+
+    for (const feature of data.features) {
+      const props = feature.properties;
+      const city = props.name;
+      const state = STATE_ABBR[props.state];
+      if (!seenAddresses.some(([c, s]) => c === city && s === state)) {
+        seenAddresses.push([city, state]);
+      }
+      if (seenAddresses.length >= CITIES_TO_FETCH) break;
+    }
+  } catch (e) {
+    console.error(e);
+  }
+
+  console.log("seenAddresses: ", seenAddresses);
+  return seenAddresses;
+}
+
+
+
+// export default async function citySearch(bottomLeft: LatLngTuple, topRight: LatLngTuple):Promise<[string, string][]> {
+//     const points = getPoints(bottomLeft, topRight, 3, 3)
+//     //console.log("Center: ", [(bottomLeft[0] + topRight[0]) / 2, (bottomLeft[1] + topRight[1]) / 2],"Test Points: ", testPoints)
+//     // console.log("Point: ", [(bottomLeft[0] + topRight[0]) / 2, (bottomLeft[1] + topRight[1]) / 2])
+//     //for (const point of testPoints) {
+//         //console.log("Point: ", [(bottomLeft[0] + topRight[0]) / 2, (bottomLeft[1] + topRight[1]) / 2])
+//     //}
+//     let seenAddresses:[string, string][] = [];
    
     
-    console.log("NOT TESTED")
-    //const points = [[(bottomLeft[0] + topRight[0]) / 2, (bottomLeft[1] + topRight[1]) / 2]];
-    const radius = 100
-    //let addresses:[string, string][] = [];
-    console.log("Points ," ,points)
-    for(const latLngs of points){
-        const url = `https://photon.komoot.io/reverse?lon=${latLngs[1]}&lat=${latLngs[0]}&radius=${radius}&layer=city&limit=1`
+//     console.log("NOT TESTED")
+//     //const points = [[(bottomLeft[0] + topRight[0]) / 2, (bottomLeft[1] + topRight[1]) / 2]];
+//     const radius = 100
+//     //let addresses:[string, string][] = [];
+//     console.log("Points ," ,points)
+//     for(const latLngs of points){
+//         const url = `https://photon.komoot.io/reverse?lon=${latLngs[1]}&lat=${latLngs[0]}&radius=${radius}&layer=city&limit=1`
         
-        try {
-            console.log(url)
-            const response = await fetch(url)
-            const data = await response.json()
-            //console.log(bottomLeft, topRight)
-            if (!data.features?.length) continue;
-            console.log('searched with ', latLngs[1], latLngs[0], 'got point at ', data.features[0].geometry.coordinates[0], data.features[0].geometry.coordinates[1])
+//         try {
+//             console.log(url)
+//             const response = await fetch(url)
+//             const data = await response.json()
+//             //console.log(bottomLeft, topRight)
+//             if (!data.features?.length) continue;
+//             console.log('searched with ', latLngs[1], latLngs[0], 'got point at ', data.features[0].geometry.coordinates[0], data.features[0].geometry.coordinates[1])
 
-            const focused = data['features']['0']['properties']
+//             const focused = data['features']['0']['properties']
             
-            const city = focused['name']
-            const state = STATE_ABBR[focused["state"]]
-            console.log('city: ', city, 'state: ', state)
-            if (!seenAddresses.some(([c, s]) => c === city && s === state)){
-                seenAddresses.push([city, state])
-            }
-            //addresses.push([city, state])
-            if (seenAddresses.length >= CITIES_TO_FETCH){
-                break
-            }
-        }
-        catch (e) {
-            console.error(e)
-        }
-    }
-    console.log("seenAddresses: ", seenAddresses)
-    return seenAddresses
-}
+//             const city = focused['name']
+//             const state = STATE_ABBR[focused["state"]]
+//             console.log('city: ', city, 'state: ', state)
+//             if (!seenAddresses.some(([c, s]) => c === city && s === state)){
+//                 seenAddresses.push([city, state])
+//             }
+//             //addresses.push([city, state])
+//             if (seenAddresses.length >= CITIES_TO_FETCH){
+//                 break
+//             }
+//         }
+//         catch (e) {
+//             console.error(e)
+//         }
+//     }
+//     console.log("seenAddresses: ", seenAddresses)
+//     return seenAddresses
+// }
