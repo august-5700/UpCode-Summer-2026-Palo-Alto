@@ -13,6 +13,8 @@ import { STATE_ABBR } from "@/utils/stateCodeDict";
        return (lists.sort(key=lambda x: math.dist(center, x)))
     */
 
+const CITIES_TO_FETCH = 5
+
 function getPoints(bottomLeft: LatLngTuple, topRight: LatLngTuple, horizontal: number, vertical: number): LatLngTuple[] {
     const lists: LatLngTuple[] = []
     const center = [(bottomLeft[0] + topRight[0]) / 2, (bottomLeft[1] + topRight[1]) / 2]
@@ -25,11 +27,30 @@ function getPoints(bottomLeft: LatLngTuple, topRight: LatLngTuple, horizontal: n
 
         }
     }
-    return lists.sort((a, b) => Math.sqrt(Math.pow(center[0] - a[0], 2) + Math.pow(center[1] - a[1], 2)) - Math.sqrt(Math.pow(center[0] - b[0], 2) + Math.pow(center[1] - b[1], 2)))
+    const d2 = ([x, y]: LatLngTuple) => Math.pow(center[0] - x, 2) + Math.pow(center[1] - y, 2)
+    return lists.sort((a, b) => d2(a) - d2(b))
 }
 
+// export default async function citySearch(
+//   bottomLeft: LatLngTuple,
+//   topRight: LatLngTuple
+// ): Promise<[string, string][]> {
+//   const url = `https://api.geonames.org/citiesJSON?north=${topRight[0]}&south=${bottomLeft[0]}&east=${topRight[1]}&west=${bottomLeft[1]}&maxRows=${CITIES_TO_FETCH}&username=tcspa`;
+//     console.log("url", url)
+//   try {
+//     const response = await fetch(url);
+//     const data = await response.json();
+//     return data.geonames.map(
+//       (c: any): [string, string] => [c.name, STATE_ABBR[c.adminName1] ?? c.adminCode1]
+//     );
+//   } catch (e) {
+//     console.error(e);
+//     return [];
+//   }
+// }
+
 export default async function citySearch(bottomLeft: LatLngTuple, topRight: LatLngTuple):Promise<[string, string][]> {
-    const points = getPoints(bottomLeft, topRight, 5, 5)
+    const points = getPoints(bottomLeft, topRight, 3, 3)
     //console.log("Center: ", [(bottomLeft[0] + topRight[0]) / 2, (bottomLeft[1] + topRight[1]) / 2],"Test Points: ", testPoints)
     // console.log("Point: ", [(bottomLeft[0] + topRight[0]) / 2, (bottomLeft[1] + topRight[1]) / 2])
     //for (const point of testPoints) {
@@ -51,6 +72,7 @@ export default async function citySearch(bottomLeft: LatLngTuple, topRight: LatL
             const response = await fetch(url)
             const data = await response.json()
             //console.log(bottomLeft, topRight)
+            if (!data.features?.length) continue;
             console.log('searched with ', latLngs[1], latLngs[0], 'got point at ', data.features[0].geometry.coordinates[0], data.features[0].geometry.coordinates[1])
 
             const focused = data['features']['0']['properties']
@@ -58,11 +80,11 @@ export default async function citySearch(bottomLeft: LatLngTuple, topRight: LatL
             const city = focused['name']
             const state = STATE_ABBR[focused["state"]]
             console.log('city: ', city, 'state: ', state)
-            if (!(seenAddresses.includes([city,state]))){
+            if (!seenAddresses.some(([c, s]) => c === city && s === state)){
                 seenAddresses.push([city, state])
             }
             //addresses.push([city, state])
-            if (seenAddresses.length >= 5){
+            if (seenAddresses.length >= CITIES_TO_FETCH){
                 break
             }
         }

@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 interface SidebarProps {
     title: string;
 	regionalData: TractData[] | null;
-	listingData?: GetListingsResult;
+	listingData: GetListingsResult | null;
 	onClose: () => void;
 	onListingSelect?: (listing: SaleListing) => void;
     comparisonSelectorActive: boolean;
@@ -40,6 +40,8 @@ export default function Sidebar({
 		? regionalData.length 
 		: 0;
 
+    const listingsComparedData = listingData?.listings.filter((l: SaleListing) => l.compared) ?? []
+    
 
 	return (
         <motion.div
@@ -92,7 +94,7 @@ export default function Sidebar({
                 {/* Panels Layout Container */}
                 <div className="flex flex-row h-full w-full min-h-0 min-w-0 overflow-x-auto space-x-12">
                     {/* Dynamic Slots for Regions with Listing Viewer Layout */}
-                    {regionalData &&
+                    {regionalData && !(listingsComparedData.length > 0) &&
                         regionalData.map((region: TractData, index: number) => (
                             <div
                                 key={title || `region-${index}`}
@@ -136,13 +138,27 @@ export default function Sidebar({
                                 </div>
                                 <RegionalOverview data={region} />
                                 {listingData && onListingSelect && (
-                                    <ListingsViewer title={title} data={listingData} onListingSelect={onListingSelect} />
+                                    <ListingsViewer 
+                                        title={title} 
+                                        data={listingData} 
+                                        onListingSelect={onListingSelect} 
+                                        onCompareListing={
+                                            (l: SaleListing) => {
+                                                l.compared = false
+                                                setComparisonSelectorActive(true)
+                                            }
+                                        }
+                                    />
                                 )}
                                 {!listingData && (
                                     <RegionalDetails data={region} />
                                 )}
+
                             </div>
                         ))}
+                    {listingsComparedData.length > 0 && (
+                        <div>{listingsComparedData[0].address ?? ''}</div>
+                    )}
                 </div>
             </Card>
         </motion.div>
