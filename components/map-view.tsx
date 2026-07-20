@@ -20,6 +20,7 @@ import { prepareWithDefaults } from "@/utils/listings/prepareListings";
 import citySearch from "@/utils/citySearch";
 import L from "leaflet";
 import { MarkerType, SidebarContent, TractData } from "@/utils/types";
+import LoadingToast from "./loading-toast";
 
 type Hover = { block: any; x: number; y: number; countyName: string | null } | null;
 
@@ -54,6 +55,11 @@ export default function MapView() {
     }>();
     const [enableListingsButton, setEnableListingButton] = useState<boolean>(false);
     const [loading, setLoading] = useState(true);
+    // separate from `loading` (which Map also drives) so the toast only shows
+    // while the listings request is actually in flight
+    const [fetchingListings, setFetchingListings] = useState(false);
+    // only known once citySearch resolves, so the toast starts generic
+    const [listingsCity, setListingsCity] = useState<string | null>(null);
     const [activeLayer, setActiveLayer] = useState<
         "default" | "heatmap" | "choropleth" | "none"
     >("default");
