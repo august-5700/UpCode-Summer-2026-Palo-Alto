@@ -1,11 +1,8 @@
+"use server"
 import OpenAI from "openai";
-import dotenv from "dotenv";
 
-dotenv.config();
-
-const apiKey = process.env.OPENAI_API_KEY;
-
-console.log("API key found:", apiKey !== undefined);
+const apiKey = process.env.OPENAI_API_KEY!
+console.log('apikey: ', apiKey)
 
 const client = new OpenAI({
     apiKey: apiKey,

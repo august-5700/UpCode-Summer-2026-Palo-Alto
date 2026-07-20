@@ -9,7 +9,7 @@ interface RegionalOverviewProps {
 
 export default function RegionalOverview({data}: RegionalOverviewProps){
     return (
-      <section className="flex flex-col items-center w-70">
+      <section className="flex flex-col items-center w-54">
         <p className="self-start text-xs font-semibold uppercase tracking-wider text-gray-500">
           HeatMap Score
         </p>
@@ -17,7 +17,7 @@ export default function RegionalOverview({data}: RegionalOverviewProps){
           <p className="mt-1 text-6xl font-extrabold leading-none text-gray-300">N/A</p>
         ) : (
           <p className="mt-1 flex items-baseline gap-1 font-extrabold leading-none text-green-600">
-            <span className="text-7xl">{data.score.toFixed(1)}</span>
+            <span className="text-6xl">{data.score.toFixed(1)}</span>
             <span className="text-2xl text-gray-300">/10</span>
           </p>
         )}

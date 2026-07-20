@@ -155,7 +155,7 @@ export default function TestListingsModal({ onClose }: { onClose: () => void }) 
               </span>
             </div>
             <p className="text-xs text-gray-400">
-              {result.rentalCount.toLocaleString()} of {result.rentalTotal.toLocaleString()} rental
+              {result.rentalCount ? result.rentalCount.toLocaleString() : ''} of {result.rentalTotal ? result.rentalTotal.toLocaleString() : ''} rental
               comps cached — the basis for the rent estimates
             </p>
           </div>
