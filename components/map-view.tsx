@@ -20,6 +20,7 @@ import L from "leaflet";
 import { renderMarkers } from "@/utils/renderMarkers";
 import { MarkerType, TractData } from "@/utils/types";
 import ComparisonSelectorToast from "./comparison-selector";
+import LoadingToast from "./loading-toast";
 
 type Hover = { block: any; x: number; y: number; countyName: string | null } | null;
 
@@ -42,6 +43,11 @@ export default function MapView() {
     const [sidebarTitle, setSidebarTitle] = useState<string>('');
     const [enableListingsButton, setEnableListingButton] = useState<boolean>(false);
     const [loading, setLoading] = useState(true);
+    // separate from `loading` (which Map also drives) so the toast only shows
+    // while the listings request is actually in flight
+    const [fetchingListings, setFetchingListings] = useState(false);
+    // only known once citySearch resolves, so the toast starts generic
+    const [listingsCity, setListingsCity] = useState<string | null>(null);
     const [markerPoints, setMarkerPoints] = useState<MarkerType[]>([]);
     const [comparisonSelectorActive, setComparisonSelectorActive] = useState<boolean>(false);
     const [showComparisonToast, setShowComparisonToast] = useState<boolean>(false);
@@ -73,8 +79,12 @@ export default function MapView() {
     }, []);
     
     const handleViewListingBtn = useCallback(async () => {
+        setFetchingListings(true)
+        setListingsCity(null)
+        try {
         console.log('mapbounds', mapBounds)
         const cityRange = await citySearch([mapBounds.getSouth(), mapBounds.getWest()], [mapBounds.getNorth(), mapBounds.getEast()])
+        setListingsCity(cityRange[0]?.[0]?.trim() ?? null)
 
         console.log("City Range", cityRange)
         function loadCitiesListings(){
@@ -104,6 +114,9 @@ export default function MapView() {
                 highlighted: false
             }
         }));
+        } finally {
+            setFetchingListings(false)
+        }
     }, [mapBounds])
 
     const handleSelect = useCallback(async (lat: number, lng: number, level: "county" | "block" | "listing", set: boolean, listings?:SaleListing[]) => {
@@ -185,6 +198,8 @@ export default function MapView() {
 
         try {
         setLoading(true)
+        setFetchingListings(true)
+        setListingsCity(item[0]?.trim() ?? null)
         const listingData = await getListings(item[0], item[1], 2000, 1500);
         const regionalData = await getCountyByCityState(item)
         // Filter + rank before building markers so pins match the listings pane.
@@ -206,6 +221,7 @@ export default function MapView() {
         console.log(err instanceof Error ? err.message : "Something went wrong");
         } finally {
         setLoading(false)
+        setFetchingListings(false)
         }
     }
 
@@ -214,11 +230,10 @@ export default function MapView() {
 
     return (
         <>
-            {loading && (
-                <div className=" z-1000 absolute inset-0 flex items-center text-white justify-center bg-black">
-                    Loading...
-                </div>
-            )}
+            <LoadingToast
+                show={fetchingListings}
+                message={listingsCity ? `Fetching listings in ${listingsCity}` : undefined}
+            />
             {showComparisonToast && (
                 <ComparisonSelectorToast item={sidebarValue ?? 'item'} onFinished={()=>setShowComparisonToast(false)}/>
             )}
