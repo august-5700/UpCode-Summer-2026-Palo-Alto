@@ -211,6 +211,8 @@ export default function MapView() {
         if (item.length !== 2) return;
         try {
             setLoading(true);
+            setFetchingListings(true);
+            setListingsCity(item[0]?.trim() || null);
             const result = await getListings(item[0], item[1], 2000, 1500);
             const region = await getCountyByCityState(item);
             await showListings(item[0], region, result.listings, {
@@ -222,12 +224,15 @@ export default function MapView() {
             console.log(err instanceof Error ? err.message : "Something went wrong");
         } finally {
             setLoading(false);
+            setFetchingListings(false);
         }
     }, [showListings]);
 
     const handleViewListingBtn = useCallback(async () => {
         try {
             setLoading(true);
+            setFetchingListings(true);
+            setListingsCity(null);
             const listings = await getListingsInArea(
                 mapBounds.getWest(),
                 mapBounds.getSouth(),
@@ -239,6 +244,7 @@ export default function MapView() {
                 [mapBounds.getNorth(), mapBounds.getEast()]
             );
             const title = cityRange?.[0]?.[0]?.trim() || "this area";
+            setListingsCity(cityRange?.[0]?.[0]?.trim() ?? null);
             const center = mapBounds.getCenter();
             const region = await getCountyByCoords(center.lat, center.lng);
             await showListings(title, region, listings);
@@ -246,6 +252,7 @@ export default function MapView() {
             console.log(err instanceof Error ? err.message : "Something went wrong");
         } finally {
             setLoading(false);
+            setFetchingListings(false);
         }
     }, [mapBounds, showListings]);
 
@@ -341,13 +348,12 @@ export default function MapView() {
 
     return (
         <>
-            {loading && (
-                <div className=" z-1000 absolute inset-0 flex items-center text-white justify-center bg-black">
-                    Loading...
-                </div>
-            )}
 
             <GuidedSelectionToast type={guiding} onCancel={() => setGuiding(null)} />
+            <LoadingToast
+                show={fetchingListings}
+                message={listingsCity ? `Fetching listings in ${listingsCity}` : undefined}
+            />
 
             <Map
                 onSelectCoords={onMapSelect}
@@ -405,14 +411,15 @@ export default function MapView() {
             />
 
             <button
+                disabled={!enableListingsButton || fetchingListings}
                 onClick={() => {
-                    if (enableListingsButton) handleViewListingBtn();
+                    if (enableListingsButton && !fetchingListings) handleViewListingBtn();
                 }}
                 className={cn(
                     "absolute right-4 bottom-4 z-100 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-lg  transition duration-300",
-                    enableListingsButton
+                    enableListingsButton && !fetchingListings
                         ? "bg-blue-600 hover:bg-blue-700"
-                        : "bg-gray-400 hover:bg-gray-500"
+                        : "bg-gray-400 hover:bg-gray-500 cursor-not-allowed"
                 )}
             >
                 {fetchingListings ? 'Fetching…' : 'View Listings'}
