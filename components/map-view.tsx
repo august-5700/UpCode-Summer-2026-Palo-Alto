@@ -168,6 +168,9 @@ export default function MapView() {
             listings: SaleListing[],
             meta?: { complete?: boolean; rentalCount?: number; rentalTotal?: number }
         ) => {
+            setSidebar({
+                level: null,
+            })
             const ranked = prepareWithDefaults(listings);
             setGuiding(null);
             setSidebar({
@@ -426,6 +429,7 @@ export default function MapView() {
             <Search
                 handleSubmit={(lat, lng, bbox, item) => {
                     setMapCenter({ lat, lng, bbox });
+                    closeSidebar()
                     viewListings(item);
                 }}
             />
@@ -449,7 +453,10 @@ export default function MapView() {
             <button
                 disabled={!enableListingsButton || fetchingListings}
                 onClick={() => {
-                    if (enableListingsButton && !fetchingListings) handleViewListingBtn();
+                    if (enableListingsButton && !fetchingListings) {
+                        closeSidebar()
+                        handleViewListingBtn();
+                    }
                 }}
                 className={cn(
                     "absolute right-4 bottom-4 z-100 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-lg  transition duration-300",
