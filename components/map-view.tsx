@@ -215,6 +215,7 @@ export default function MapView() {
             setLoading(true);
             setFetchingListings(true);
             setListingsCity(item[0]?.trim() || null);
+           
             const result = await getListings(item[0], item[1], 2000, 1500);
             const region = await getCountyByCityState(item);
             if (region) {
@@ -239,24 +240,40 @@ export default function MapView() {
     const handleViewListingBtn = useCallback(async () => {
         const factSeq = ++factSeqRef.current;
         setAreaFact(null);
-        try {
-            setLoading(true);
-            setFetchingListings(true);
-            setListingsCity(null);
-            const listings = await getListingsInArea(
-                mapBounds.getWest(),
-                mapBounds.getSouth(),
-                mapBounds.getEast(),
-                mapBounds.getNorth()
+    try {
+        setLoading(true);
+
+        // 1. Which cities fall inside the current viewport.
+        const cityRange = await citySearch(
+            [mapBounds.getSouth(), mapBounds.getWest()],
+            [mapBounds.getNorth(), mapBounds.getEast()]
+        );
+        console.log("[ViewListings] cities in viewport:", cityRange);
+
+        // 2. Populate the DB one city at a time. Each getListings caches into the
+        //    DB, and we await every one before the area query so getListingsInArea
+        //    reads a fully-populated DB rather than an empty/stale one.
+        for (const [city, state] of cityRange as [string, string][]) {
+            const c = city.trim();
+            const s = state.trim();
+            console.log(`[ViewListings] fetching listings for ${c}, ${s}`);
+            const data = await getListings(c, s, 2000, 1000);
+            console.log(
+                `[ViewListings] ${c}, ${s} -> ${data.listings.length} listings cached`
             );
-            const cityRange = await citySearch(
-                [mapBounds.getSouth(), mapBounds.getWest()],
-                [mapBounds.getNorth(), mapBounds.getEast()]
-            );
-            const title = cityRange?.[0]?.[0]?.trim() || "this area";
-            setListingsCity(cityRange?.[0]?.[0]?.trim() ?? null);
-            const center = mapBounds.getCenter();
-            const region = await getCountyByCoords(center.lat, center.lng);
+        }
+
+        // 3. Now read every listing in the viewport from the populated DB.
+        const listings = await getListingsInArea(
+            mapBounds.getWest(),
+            mapBounds.getSouth(),
+            mapBounds.getEast(),
+            mapBounds.getNorth()
+        );
+        console.log(`[ViewListings] area query -> ${listings.length} listings`);
+
+        const center = mapBounds.getCenter();
+        const region = await getCountyByCoords(center.lat, center.lng);
             if (region) {
                 const city = cityRange?.[0]?.[0]?.trim();
                 const state = cityRange?.[0]?.[1]?.trim();
@@ -266,17 +283,17 @@ export default function MapView() {
                     market: region,
                 });
             }
-            await showListings(title, region, listings);
-        } catch (err) {
-            console.log(err instanceof Error ? err.message : "Something went wrong");
-        } finally {
-            setLoading(false);
-            setFetchingListings(false);
+        const title = cityRange?.[0]?.[0]?.trim() || "this area";
+        await showListings(title, region, listings);
+    } catch (err) {
+        console.log(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+        setLoading(false);
             // deliberately NOT cancelling the blurb here - the AI usually
             // finishes after the fetch, and it self-hides on its own timer
-        }
-    }, [mapBounds, showListings, runAreaFact]);
-
+    }
+}, [mapBounds, showListings, runAreaFact]);
+    
     // ── Sidebar callbacks ──────────────────────────────────────────────────────
 
     const startCompare = useCallback(() => {
