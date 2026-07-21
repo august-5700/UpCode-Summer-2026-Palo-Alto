@@ -30,6 +30,11 @@ export const DEFAULT_FILTER_VALUES: ListingFilterValues = {
     maxDaysOnMarket: MAX_DOM,
 };
 
+interface FiltersProps {
+    value: ListingFilterValues;
+    onChange: (next: ListingFilterValues) => void;
+}
+
 function Row({ label, children }: { label: string; children: ReactNode }) {
     return (
         <div className="flex flex-col gap-1">
@@ -39,12 +44,11 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
     );
 }
 
-export default function Filters() {
+export default function Filters({ value, onChange }: FiltersProps) {
     const [open, setOpen] = useState(false);
-    const [values, setValues] = useState<ListingFilterValues>(DEFAULT_FILTER_VALUES);
 
     const set = (k: keyof ListingFilterValues) => (v: number) =>
-        setValues((s) => ({ ...s, [k]: v }));
+        onChange({ ...value, [k]: v });
 
     return (
         <>
@@ -58,7 +62,7 @@ export default function Filters() {
                         <Row label="Min price">
                             <MinSlider
                                 icon={DollarSign}
-                                value={values.minPrice}
+                                value={value.minPrice}
                                 onChange={set("minPrice")}
                                 min={0}
                                 max={MAX_PRICE}
@@ -70,7 +74,7 @@ export default function Filters() {
                         <Row label="Max price">
                             <MinSlider
                                 icon={DollarSign}
-                                value={values.maxPrice}
+                                value={value.maxPrice}
                                 onChange={set("maxPrice")}
                                 min={0}
                                 max={MAX_PRICE}
@@ -82,7 +86,7 @@ export default function Filters() {
                         <Row label="Min beds">
                             <MinSlider
                                 icon={BedDouble}
-                                value={values.minBeds}
+                                value={value.minBeds}
                                 onChange={set("minBeds")}
                                 min={0}
                                 max={6}
@@ -94,7 +98,7 @@ export default function Filters() {
                         <Row label="Min gross yield">
                             <MinSlider
                                 icon={Percent}
-                                value={values.minYield}
+                                value={value.minYield}
                                 onChange={set("minYield")}
                                 min={0}
                                 max={15}
@@ -106,7 +110,7 @@ export default function Filters() {
                         <Row label="Max days on market">
                             <MinSlider
                                 icon={CalendarClock}
-                                value={values.maxDaysOnMarket}
+                                value={value.maxDaysOnMarket}
                                 onChange={set("maxDaysOnMarket")}
                                 min={0}
                                 max={MAX_DOM}
