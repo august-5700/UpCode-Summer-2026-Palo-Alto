@@ -253,19 +253,23 @@ export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading,
                     return "#ffffff";
                 }
                     
-                const county = counties.filter((county: any)=>county.name == feature.properties?.NAME && county.state_fip == feature.properties?.STATEFP)[0]
+                const county = counties.filter((county: any)=>
+                    county.name == feature.properties?.NAME // check that the county name is the same as the feature name
+                    && county.state_fip == feature.properties?.STATEFP // also check state fip (some counties have the same name)
+                )
+                [0]
 
                 if (!county){
                     console.log('no county')
                     return "#ffffff";
                 }
                     
-
+                const median_home_value = (county.median_home_value ?? -1)
+                const median_gross_rent = (county.median_gross_rent ?? -1)
                 return valueToHex(
-                    (county.median_gross_rent ?? -1) /
-                    (county.median_home_value ?? -1),
+                    computeHeatSimple(median_home_value, median_gross_rent) ?? -1,
                     0,
-                    0.0075,
+                    10,
                     "#ff0000",
                     "#00ff00"
                 );
