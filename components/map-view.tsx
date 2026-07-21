@@ -216,14 +216,19 @@ export default function MapView() {
             setFetchingListings(true);
             setListingsCity(item[0]?.trim() || null);
            
+            const regionPromise = getCountyByCityState(item);
+            regionPromise
+                .then((region) => {
+                    if (factSeq !== factSeqRef.current || !region) return;
+                    runAreaFact(factSeq, {
+                        location: `${item[0]}, ${item[1]}`,
+                        market: region,
+                    });
+                })
+                .catch(() => {});
+
             const result = await getListings(item[0], item[1], 2000, 1500);
-            const region = await getCountyByCityState(item);
-            if (region) {
-                runAreaFact(factSeq, {
-                    location: `${item[0]}, ${item[1]}`,
-                    market: region,
-                });
-            }
+            const region = await regionPromise;
             await showListings(item[0], region, result.listings, {
                 complete: result.complete,
                 rentalCount: result.rentalCount,
@@ -242,6 +247,11 @@ export default function MapView() {
         setAreaFact(null);
     try {
         setLoading(true);
+        setFetchingListings(true);
+        setListingsCity(null);
+
+        const center = mapBounds.getCenter();
+        const regionPromise = getCountyByCoords(center.lat, center.lng);
 
         // 1. Which cities fall inside the current viewport.
         const cityRange = await citySearch(
@@ -249,6 +259,21 @@ export default function MapView() {
             [mapBounds.getNorth(), mapBounds.getEast()]
         );
         console.log("[ViewListings] cities in viewport:", cityRange);
+
+        setListingsCity(cityRange?.[0]?.[0]?.trim() ?? null);
+
+        regionPromise
+            .then((region) => {
+                if (factSeq !== factSeqRef.current || !region) return;
+                const city = cityRange?.[0]?.[0]?.trim();
+                const state = cityRange?.[0]?.[1]?.trim();
+                runAreaFact(factSeq, {
+                    location: city ? `${city}${state ? `, ${state}` : ""}` : undefined,
+                    coordinates: { lat: center.lat, lng: center.lng },
+                    market: region,
+                });
+            })
+            .catch(() => {});
 
         // 2. Populate the DB one city at a time. Each getListings caches into the
         //    DB, and we await every one before the area query so getListingsInArea
@@ -272,25 +297,14 @@ export default function MapView() {
         );
         console.log(`[ViewListings] area query -> ${listings.length} listings`);
 
-        const center = mapBounds.getCenter();
-        const region = await getCountyByCoords(center.lat, center.lng);
-            if (region) {
-                const city = cityRange?.[0]?.[0]?.trim();
-                const state = cityRange?.[0]?.[1]?.trim();
-                runAreaFact(factSeq, {
-                    location: city ? `${city}${state ? `, ${state}` : ""}` : undefined,
-                    coordinates: { lat: center.lat, lng: center.lng },
-                    market: region,
-                });
-            }
+        const region = await regionPromise;
         const title = cityRange?.[0]?.[0]?.trim() || "this area";
         await showListings(title, region, listings);
     } catch (err) {
         console.log(err instanceof Error ? err.message : "Something went wrong");
     } finally {
         setLoading(false);
-            // deliberately NOT cancelling the blurb here - the AI usually
-            // finishes after the fetch, and it self-hides on its own timer
+        setFetchingListings(false);
     }
 }, [mapBounds, showListings, runAreaFact]);
     
