@@ -81,7 +81,8 @@ function mapSale(r: SaleRow): SaleListing {
     bedrooms: r.bedrooms, bathrooms: r.bathrooms, squareFootage: r.square_footage,
     lotSize: r.lot_size, yearBuilt: r.year_built, ageYears: r.age_years,
     propertyType: r.property_type, status: r.status, daysOnMarket: r.days_on_market,
-    latitude: r.latitude, longitude: r.longitude, raw: r.raw, selected: false
+    latitude: r.latitude, longitude: r.longitude, raw: r.raw, selected: false,
+    compared: false
   };
 }
 
