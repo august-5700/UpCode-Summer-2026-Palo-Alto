@@ -32,6 +32,8 @@ import LoadingToast from "./loading-toast";
 import SummaryToast from "./summary-toast";
 import { summary } from "@/utils/ai";
 import { VIEW_LISTINGS_PROMPT } from "@/prompts/viewListingsPrompt";
+import { COMPARE_REGIONS_PROMPT } from "@/prompts/compareRegionsPrompt";
+import { COMPARE_LISTINGS_PROMPT } from "@/prompts/compareListingsPrompt";
 
 type Hover = { block: any; x: number; y: number; countyName: string | null } | null;
 
@@ -62,6 +64,7 @@ export default function MapView() {
     const [fetchingListings, setFetchingListings] = useState(false);
     const [listingsCity, setListingsCity] = useState<string | null>(null);
     const [areaFact, setAreaFact] = useState<string | null>(null);
+    const [summaryTitle, setSummaryTitle] = useState("Regional Fact");
     const [listingFilters, setListingFilters] =
         useState<ListingFilterValues>(DEFAULT_FILTER_VALUES);
     const factSeqRef = useRef(0);
@@ -99,6 +102,7 @@ export default function MapView() {
 
     const listingFiltersRef = useRef(listingFilters);
     useEffect(() => { listingFiltersRef.current = listingFilters; }, [listingFilters]);
+
 
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const anchorRef = useRef<{ x: number; y: number } | null>(null);
@@ -223,17 +227,75 @@ export default function MapView() {
         []
     );
 
-    const runAreaFact = useCallback(
-        async (seq: number, context: Record<string, unknown>) => {
+    const runSummary = useCallback(
+        async (
+            seq: number,
+            prompt: string,
+            context: Record<string, unknown>,
+            title: string
+        ) => {
             try {
-                const text = await summary(VIEW_LISTINGS_PROMPT, context);
+                const text = await summary(prompt, context);
                 if (seq !== factSeqRef.current) return;
                 const trimmed = text.trim();
-                if (trimmed) setAreaFact(trimmed);
+                if (trimmed) {
+                    setAreaFact(trimmed);
+                    setSummaryTitle(title);
+                }
             } catch {}
         },
         []
     );
+
+    const runAreaFact = useCallback(
+        (seq: number, context: Record<string, unknown>) =>
+            runSummary(seq, VIEW_LISTINGS_PROMPT, context, "Regional Fact"),
+        [runSummary]
+    );
+
+    const comparison = useMemo(() => {
+        if (sidebar.level === "county" || sidebar.level === "block") {
+            if (sidebar.regions.length < 2) return null;
+            return {
+                key: `region:${sidebar.regions.map((r) => r.title).join("|")}`,
+                prompt: COMPARE_REGIONS_PROMPT,
+                context: { areas: sidebar.regions } as Record<string, unknown>,
+            };
+        }
+        if (sidebar.level === "listing" && sidebar.comparing.length >= 2) {
+            return {
+                key: `listing:${sidebar.comparing.map((l) => l.id).join("|")}`,
+                prompt: COMPARE_LISTINGS_PROMPT,
+                context: {
+                    properties: sidebar.comparing.map((l) => ({
+                        address: l.address,
+                        price: l.price,
+                        estimatedRent: l.estimatedRent,
+                        annualRentToPrice: l.annualRentToPrice,
+                        bedrooms: l.bedrooms,
+                        bathrooms: l.bathrooms,
+                        squareFootage: l.squareFootage,
+                        yearBuilt: l.yearBuilt,
+                        propertyType: l.propertyType,
+                        daysOnMarket: l.daysOnMarket,
+                    })),
+                } as Record<string, unknown>,
+            };
+        }
+        return null;
+    }, [sidebar]);
+
+    const comparisonKey = comparison?.key ?? null;
+    const comparisonRef = useRef(comparison);
+    useEffect(() => { comparisonRef.current = comparison; }, [comparison]);
+
+    useEffect(() => {
+        const c = comparisonRef.current;
+        if (!comparisonKey || !c) return;
+        const seq = ++factSeqRef.current;
+        setAreaFact(null);
+        runSummary(seq, c.prompt, c.context, "Comparison Information");
+    }, [comparisonKey, runSummary]);
 
     const viewListings = useCallback(async (item: string[]) => {
         if (item.length !== 2) return;
@@ -431,7 +493,11 @@ export default function MapView() {
                 loading={fetchingListings}
                 message={listingsCity ? `Fetching listings in ${listingsCity}` : undefined}
             />
-            <SummaryToast text={areaFact} onClose={() => setAreaFact(null)} />
+            <SummaryToast
+                text={areaFact}
+                title={summaryTitle}
+                onClose={() => setAreaFact(null)}
+            />
 
             <Map
                 onSelectCoords={onMapSelect}
