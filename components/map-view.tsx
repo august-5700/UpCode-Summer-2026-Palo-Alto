@@ -276,9 +276,9 @@ export default function MapView() {
             setListingsCity(c);
             console.log(`[ViewListings] fetching listings for ${c}, ${s}`);
             const data = await getListings(c, s, 2000, 1000);
-            console.log(
-                `[ViewListings] ${c}, ${s} -> ${data.listings.length} listings cached`
-            );
+            // console.log(
+            //     `[ViewListings] ${c}, ${s} -> ${data.listings.length} listings cached`
+            // );
         }
 
         // 3. Now read every listing in the viewport from the populated DB.
@@ -288,7 +288,7 @@ export default function MapView() {
             mapBounds.getEast(),
             mapBounds.getNorth()
         );
-        console.log(`[ViewListings] area query -> ${listings.length} listings`);
+        // console.log(`[ViewListings] area query -> ${listings.length} listings`);
 
         const region = await regionPromise;
         const title = cityRange?.[0]?.[0]?.trim() || "this area";
