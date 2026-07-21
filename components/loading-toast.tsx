@@ -4,19 +4,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 
 interface LoadingToastProps {
-    show: boolean;
+    loading: boolean;
     message?: string;
 }
 
-// Same - ComparisonSelectorToast, but stays up for as long as `show`
-// is true instead fading out after a set time
 export default function LoadingToast({
-    show,
+    loading,
     message = 'Fetching listings in this area',
 }: LoadingToastProps) {
     return (
         <AnimatePresence>
-            {show && (
+            {loading && (
                 <motion.div
                     initial={{ opacity: 0, y: -24, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}

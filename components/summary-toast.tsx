@@ -1,0 +1,37 @@
+'use client';
+
+import { motion, AnimatePresence } from 'framer-motion';
+import { X } from 'lucide-react';
+
+interface SummaryToastProps {
+    text: string | null;
+    onClose: () => void;
+}
+
+export default function SummaryToast({ text, onClose }: SummaryToastProps) {
+    return (
+        <AnimatePresence>
+            {text && (
+                <motion.div
+                    initial={{ opacity: 0, y: 24, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 24, scale: 0.95 }}
+                    transition={{ duration: 0.25, ease: 'easeOut' }}
+                    className="fixed bottom-6 left-1/2 z-[1000] w-full max-w-md -translate-x-1/2 px-4"
+                >
+                    <div className="flex items-start gap-3 rounded-2xl border border-white/40 bg-white/50 px-5 py-4 shadow-xl backdrop-blur-2xl backdrop-saturate-150">
+                        <p className="flex-1 text-sm leading-relaxed text-gray-800">{text}</p>
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            aria-label="Dismiss"
+                            className="-mr-1 -mt-1 shrink-0 rounded-full p-1 text-gray-500 transition hover:bg-white/60 hover:text-gray-900"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    </div>
+                </motion.div>
+            )}
+        </AnimatePresence>
+    );
+}
