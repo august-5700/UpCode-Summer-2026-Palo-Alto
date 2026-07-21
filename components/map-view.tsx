@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map from "./map";
 import Sidebar from "./sidebar";
 import MapTooltip from "./map-tooltip";
@@ -12,7 +12,14 @@ import {
     getCountyByCityState,
 } from "@/utils/api";
 import { Search } from "./search";
-import { Filters } from "./filters";
+import {
+    Filters,
+    DEFAULT_FILTER_VALUES,
+    MAX_PRICE,
+    MAX_DOM,
+    type ListingFilterValues,
+} from "./filters";
+import { makeManualFilter } from "@/utils/listings/listingFilters";
 import { LayersToggle } from "./layer-toggle";
 import { cn } from "@/lib/utils";
 import { getListings, getListingsInArea } from "@/utils/listings";
@@ -55,14 +62,39 @@ export default function MapView() {
     const [fetchingListings, setFetchingListings] = useState(false);
     const [listingsCity, setListingsCity] = useState<string | null>(null);
     const [areaFact, setAreaFact] = useState<string | null>(null);
+    const [listingFilters, setListingFilters] =
+        useState<ListingFilterValues>(DEFAULT_FILTER_VALUES);
     const factSeqRef = useRef(0);
     const [activeLayer, setActiveLayer] = useState<
         "default" | "heatmap" | "choropleth" | "none"
     >("default");
 
-    const sidebarRef = useRef(sidebar);
+    const manualFilter = useMemo(
+        () =>
+            makeManualFilter({
+                minPrice: listingFilters.minPrice || undefined,
+                maxPrice:
+                    listingFilters.maxPrice < MAX_PRICE ? listingFilters.maxPrice : undefined,
+                minBeds: listingFilters.minBeds || undefined,
+                maxDaysOnMarket:
+                    listingFilters.maxDaysOnMarket < MAX_DOM
+                        ? listingFilters.maxDaysOnMarket
+                        : undefined,
+                minYield: listingFilters.minYield
+                    ? listingFilters.minYield / 100
+                    : undefined,
+            }),
+        [listingFilters]
+    );
+
+    const visibleSidebar = useMemo<SidebarContent>(() => {
+        if (sidebar.level !== "listing") return sidebar;
+        return { ...sidebar, listings: sidebar.listings.filter(manualFilter) };
+    }, [sidebar, manualFilter]);
+
+    const sidebarRef = useRef(visibleSidebar);
     const guidingRef = useRef(guiding);
-    useEffect(() => { sidebarRef.current = sidebar; }, [sidebar]);
+    useEffect(() => { sidebarRef.current = visibleSidebar; }, [visibleSidebar]);
     useEffect(() => { guidingRef.current = guiding; }, [guiding]);
 
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -72,9 +104,9 @@ export default function MapView() {
     const ENABLE_LISTINGS_BUTTON_LEVEL = 8;
 
     useEffect(() => {
-        if (sidebar.level === "listing") {
+        if (visibleSidebar.level === "listing") {
             setMarkerPoints(
-                sidebar.listings.map((l) => ({
+                visibleSidebar.listings.map((l) => ({
                     lat: l.latitude,
                     lng: l.longitude,
                     address: l.address,
@@ -84,7 +116,7 @@ export default function MapView() {
         } else {
             setMarkerPoints([]);
         }
-    }, [sidebar]);
+    }, [visibleSidebar]);
 
     useEffect(() => {
         getCounties().then((counties: any[]) => {
@@ -411,7 +443,7 @@ export default function MapView() {
             />
 
             <Sidebar
-                content={sidebar}
+                content={visibleSidebar}
                 onClose={closeSidebar}
                 onStartCompare={startCompare}
                 onStartListingCompare={startListingCompare}
@@ -437,7 +469,7 @@ export default function MapView() {
                 }}
             />
 
-            <Filters />
+            <Filters value={listingFilters} onChange={setListingFilters} />
 
             <LayersToggle
                 value={activeLayer}
