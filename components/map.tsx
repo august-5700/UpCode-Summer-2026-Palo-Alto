@@ -125,8 +125,7 @@ export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading,
             zoom >= blockThreshold
                 ? await getBlocksWithinRange(padBounds)
                 : await getCounties();
-        console.log("data")
-        console.log(raw)
+
 
         
         // Checks if the requestId is current and that there is a map
