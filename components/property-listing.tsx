@@ -13,6 +13,7 @@ import { getResultFromAddressAutocomplete } from "@/utils/api";
 import { SaleListing } from "@/utils/listings.types";
 import { pricePerSqft } from "@/utils/listings/listingFilters";
 import { GeoData } from "@/utils/types";
+import { zillowUrl } from "@/utils/zillow";
 
 import { ArrowRightLeft, DollarSign, Search as SearchIcon, X } from 'lucide-react';
 import { useState } from "react";
@@ -111,13 +112,22 @@ export function PropertyListing({l, onListingSelect, onCompareListing, onRemoveL
                         <ArrowRightLeft className="h-3 w-3"/>
                         Compare
                     </button>
-                    <button
-                        // ZILLOW PLUGIN ONCLICK
-                        className="flex col-span-2 items-center justify-center rounded-full py-1 px-2 gap-x-1 text-xs font-semibold text-white shadow-lg transition duration-300 bg-green-600 hover:bg-green-700"
+                    <a
+                        href={zillowUrl(l.address) ?? undefined}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        aria-disabled={!l.address}
+                        className={cn(
+                            "flex col-span-2 items-center justify-center rounded-full py-1 px-2 gap-x-1 text-xs font-semibold text-white shadow-lg transition duration-300",
+                            l.address
+                                ? "bg-green-600 hover:bg-green-700"
+                                : "bg-gray-400 cursor-not-allowed pointer-events-none"
+                        )}
                     >
                         <DollarSign className='h-3 w-3' />
                         Zillow
-                    </button>
+                    </a>
                     <button
                         onClick={()=>onRemoveListing(l)}
                         className="flex col-span-1 items-center justify-center rounded-full p-1 gap-x-1 text-xs font-semibold text-white shadow-lg transition duration-300 bg-red-600 hover:bg-red-700"
