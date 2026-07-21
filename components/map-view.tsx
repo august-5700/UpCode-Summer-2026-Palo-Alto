@@ -267,6 +267,7 @@ export default function MapView() {
                 if (factSeq !== factSeqRef.current || !region) return;
                 const city = cityRange?.[0]?.[0]?.trim();
                 const state = cityRange?.[0]?.[1]?.trim();
+                
                 runAreaFact(factSeq, {
                     location: city ? `${city}${state ? `, ${state}` : ""}` : undefined,
                     coordinates: { lat: center.lat, lng: center.lng },
@@ -281,6 +282,7 @@ export default function MapView() {
         for (const [city, state] of cityRange as [string, string][]) {
             const c = city.trim();
             const s = state.trim();
+            setListingsCity(c);
             console.log(`[ViewListings] fetching listings for ${c}, ${s}`);
             const data = await getListings(c, s, 2000, 1000);
             console.log(
