@@ -79,13 +79,12 @@ export function Search({handleSubmit}: SearchProps) {
           }} 
       />
       </TooltipTrigger>
-      <TooltipContent side='right' className="bg-white text-gray-800">
-          <p >Search</p>
+      <TooltipContent side='right' className="bg-white/50 text-gray-800 ml-10 backdrop-blur-2xl backdrop-saturate-150">
           <Popover>
             <PopoverTrigger>
                 <CircleQuestionMark scale='0.1'/>
             </PopoverTrigger>
-            <PopoverContent side='bottom' className='mt-3'>
+            <PopoverContent side='bottom' className='mt-3 bg-white/50 backdrop-blur-2xl backdrop-saturate-150 text-gray-700'>
                 <PopoverHeader>
                     <PopoverTitle>Locate Cities And Counties</PopoverTitle>
                     <PopoverDescription className='text-xs'>
