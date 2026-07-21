@@ -1,5 +1,6 @@
 import L from "leaflet";
 import { Map as MapType } from "leaflet";
+import { MarkerType } from "./types";
 
 const defaultColor = "#2563eb";
 const defaultFillColor = "#60a5fa";
