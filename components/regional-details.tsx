@@ -1,6 +1,6 @@
 "use client";
 
-import { TractData } from "@/utils/api";
+import { TractData } from "@/utils/types";
 import { Building2, DollarSign, Home } from "lucide-react";
 
 interface RegionalDetailsProps {

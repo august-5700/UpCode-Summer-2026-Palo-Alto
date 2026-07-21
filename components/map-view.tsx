@@ -21,18 +21,16 @@ import citySearch from "@/utils/citySearch";
 import L from "leaflet";
 import { MarkerType, SidebarContent, TractData } from "@/utils/types";
 import LoadingToast from "./loading-toast";
+import SummaryToast from "./summary-toast";
+import { summary } from "@/utils/ai";
 
 type Hover = { block: any; x: number; y: number; countyName: string | null } | null;
 
-const HOVER_DELAY = 1000; // ms of stillness before the tooltip shows
-const MOVE_THRESHOLD = 10; // px, moves smaller than this count as still (ignores jitter)
+const HOVER_DELAY = 1000;
+const MOVE_THRESHOLD = 10; 
 
-// How close (in degrees) a map click must land to a listing marker to count as
-// "clicking that listing" during guided listing comparison. ~0.02deg ≈ 2 km.
 const LISTING_SELECT_RADIUS_DEG = 0.02;
 
-// Two counties/blocks are "the same" region if their titles match. Used to
-// avoid adding a duplicate column when the user re-selects the same area.
 const sameRegion = (a: TractData, b: TractData) => a.title === b.title;
 
 export default function MapView() {
@@ -40,9 +38,6 @@ export default function MapView() {
         new L.LatLngBounds([0, 1], [0, -1])
     );
 
-    // ── The single source of truth for the sidebar ─────────────────────────────
-    // `sidebar` = { level, data }. `guiding` = which type the user is currently
-    // being asked to pick a second of (drives the toast + constrains map clicks).
     const [sidebar, setSidebar] = useState<SidebarContent>({ level: null });
     const [guiding, setGuiding] = useState<"block" | "county" | "listing" | null>(null);
     const [markerPoints, setMarkerPoints] = useState<MarkerType[]>([]);
@@ -55,17 +50,14 @@ export default function MapView() {
     }>();
     const [enableListingsButton, setEnableListingButton] = useState<boolean>(false);
     const [loading, setLoading] = useState(true);
-    // separate from `loading` (which Map also drives) so the toast only shows
-    // while the listings request is actually in flight
     const [fetchingListings, setFetchingListings] = useState(false);
-    // only known once citySearch resolves, so the toast starts generic
     const [listingsCity, setListingsCity] = useState<string | null>(null);
+    const [areaFact, setAreaFact] = useState<string | null>(null);
+    const factSeqRef = useRef(0);
     const [activeLayer, setActiveLayer] = useState<
         "default" | "heatmap" | "choropleth" | "none"
     >("default");
 
-    // Map click handlers live inside Leaflet closures, so mirror the latest
-    // state into refs they can read synchronously.
     const sidebarRef = useRef(sidebar);
     const guidingRef = useRef(guiding);
     useEffect(() => { sidebarRef.current = sidebar; }, [sidebar]);
@@ -77,9 +69,6 @@ export default function MapView() {
     const countyNamesRef = useRef<Record<string, string>>({}); // "state_fip-county_fip" -> name
     const ENABLE_LISTINGS_BUTTON_LEVEL = 8;
 
-    // Markers are derived state: they only ever exist for a listing-level view,
-    // and they're rebuilt whenever the listing set changes. Any other level (or
-    // a closed sidebar) clears them — so nothing lingers on the map.
     useEffect(() => {
         if (sidebar.level === "listing") {
             setMarkerPoints(
@@ -95,7 +84,6 @@ export default function MapView() {
         }
     }, [sidebar]);
 
-    // load county names once so tract-level hovers can show the county name
     useEffect(() => {
         getCounties().then((counties: any[]) => {
             const lookup: Record<string, string> = {};
@@ -113,7 +101,6 @@ export default function MapView() {
         []
     );
 
-    // Nearest listing to a click, but only if it's within the select radius.
     const closestListingWithin = (
         listings: SaleListing[],
         lat: number,
@@ -133,10 +120,6 @@ export default function MapView() {
     };
 
     // ── The one entry point for every map click ────────────────────────────────
-    // Behaviour depends entirely on `guiding`:
-    //   • not guiding        -> replace the sidebar with the single clicked region
-    //   • guiding a region   -> append the clicked region as a comparison column
-    //   • guiding a listing  -> snap to the nearest listing and add it as a column
     const onMapSelect = useCallback(
         async (lat: number, lng: number, zoomLevel: "county" | "block") => {
             const g = guidingRef.current;
@@ -150,8 +133,6 @@ export default function MapView() {
                 setSidebar((prev) => {
                     if (prev.level !== "listing") return prev;
                     if (prev.comparing.some((c) => c.id === picked.id)) return prev;
-                    // Clear transient browse selection so nothing carries into
-                    // (or back out of) comparison view.
                     prev.listings.forEach((x) => {
                         x.selected = false;
                     });
@@ -161,7 +142,6 @@ export default function MapView() {
                 return;
             }
 
-            // Guided region comparison: force the type we're comparing, append it.
             if (g === "county" || g === "block") {
                 const data = await fetchRegion(lat, lng, g);
                 if (!data) return; // clicked empty space -> stay in guided mode
@@ -174,8 +154,6 @@ export default function MapView() {
                 return;
             }
 
-            // Normal click: collapse to the single clicked region. This drops any
-            // listings/markers and exits comparison automatically.
             const data = await fetchRegion(lat, lng, zoomLevel);
             if (!data) return;
             setSidebar({ level: zoomLevel, regions: [data] });
@@ -183,9 +161,6 @@ export default function MapView() {
         [fetchRegion]
     );
 
-    // ── Listings entry points (search + "View Listings" button) ────────────────
-    // Both collapse the sidebar to a single listing-level view for one area,
-    // clearing comparison and any prior region/listing data.
     const showListings = useCallback(
         async (
             title: string,
@@ -207,8 +182,35 @@ export default function MapView() {
         []
     );
 
+    const runAreaFact = useCallback(
+        async (seq: number, context: Record<string, unknown>) => {
+            try {
+                const text = await summary(
+                    [
+                        "You are briefing someone considering buying property in this area.",
+                        "The location field is the place the user is actually viewing and is authoritative; the market data may describe the wider surrounding county, so never name a different county or city than the location field.",
+                        "Using the market data provided and what you reliably know about this specific location, cover three things:",
+                        "(1) one notable characteristic of the area (economy, job market, growth, lifestyle, or housing supply);",
+                        "(2) one risk or factor to watch (natural disaster exposure, insurance or property tax burden, reliance on a single employer or industry, affordability, or oversupply);",
+                        "(3) how the provided numbers compare to what is typical.",
+                        "Only use the provided numbers for statistics and never invent figures.",
+                        "If you are unsure which location this is, rely on the data alone and do not guess.",
+                        "Max 3 short sentences, under 55 words. No preamble, no bullet points.",
+                    ].join(" "),
+                    context
+                );
+                if (seq !== factSeqRef.current) return;
+                const trimmed = text.trim();
+                if (trimmed) setAreaFact(trimmed);
+            } catch {}
+        },
+        []
+    );
+
     const viewListings = useCallback(async (item: string[]) => {
         if (item.length !== 2) return;
+        const factSeq = ++factSeqRef.current;
+        setAreaFact(null);
         try {
             setLoading(true);
             setFetchingListings(true);
@@ -216,6 +218,12 @@ export default function MapView() {
            
             const result = await getListings(item[0], item[1], 2000, 1500);
             const region = await getCountyByCityState(item);
+            if (region) {
+                runAreaFact(factSeq, {
+                    location: `${item[0]}, ${item[1]}`,
+                    market: region,
+                });
+            }
             await showListings(item[0], region, result.listings, {
                 complete: result.complete,
                 rentalCount: result.rentalCount,
@@ -227,9 +235,11 @@ export default function MapView() {
             setLoading(false);
             setFetchingListings(false);
         }
-    }, [showListings]);
+    }, [showListings, runAreaFact]);
 
     const handleViewListingBtn = useCallback(async () => {
+        const factSeq = ++factSeqRef.current;
+        setAreaFact(null);
     try {
         setLoading(true);
 
@@ -264,26 +274,34 @@ export default function MapView() {
 
         const center = mapBounds.getCenter();
         const region = await getCountyByCoords(center.lat, center.lng);
+            if (region) {
+                const city = cityRange?.[0]?.[0]?.trim();
+                const state = cityRange?.[0]?.[1]?.trim();
+                runAreaFact(factSeq, {
+                    location: city ? `${city}${state ? `, ${state}` : ""}` : undefined,
+                    coordinates: { lat: center.lat, lng: center.lng },
+                    market: region,
+                });
+            }
         const title = cityRange?.[0]?.[0]?.trim() || "this area";
         await showListings(title, region, listings);
     } catch (err) {
         console.log(err instanceof Error ? err.message : "Something went wrong");
     } finally {
         setLoading(false);
+            // deliberately NOT cancelling the blurb here - the AI usually
+            // finishes after the fetch, and it self-hides on its own timer
     }
-}, [mapBounds, showListings]);
+}, [mapBounds, showListings, runAreaFact]);
     
     // ── Sidebar callbacks ──────────────────────────────────────────────────────
 
-    // Compare button. From a region view -> start guiding that region type.
-    // From a listing view -> guide picking more listings (keeping any already chosen).
     const startCompare = useCallback(() => {
         const sb = sidebarRef.current;
         if (sb.level === "county" || sb.level === "block") setGuiding(sb.level);
         else if (sb.level === "listing") setGuiding("listing");
     }, []);
 
-    // "Compare" on a specific listing card: it becomes the first column, then we
     // guide the user to pick the second.
     const startListingCompare = useCallback((first: SaleListing) => {
         setSidebar((prev) =>
@@ -368,9 +386,10 @@ export default function MapView() {
 
             <GuidedSelectionToast type={guiding} onCancel={() => setGuiding(null)} />
             <LoadingToast
-                show={fetchingListings}
+                loading={fetchingListings}
                 message={listingsCity ? `Fetching listings in ${listingsCity}` : undefined}
             />
+            <SummaryToast text={areaFact} onClose={() => setAreaFact(null)} />
 
             <Map
                 onSelectCoords={onMapSelect}
