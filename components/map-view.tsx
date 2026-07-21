@@ -12,6 +12,7 @@ import {
     getCountyByCityState,
 } from "@/utils/api";
 import { Search } from "./search";
+import { Filters } from "./filters";
 import { LayersToggle } from "./layer-toggle";
 import { cn } from "@/lib/utils";
 import { getListings, getListingsInArea } from "@/utils/listings";
@@ -437,6 +438,8 @@ export default function MapView() {
                     viewListings(item);
                 }}
             />
+
+            <Filters />
 
             <LayersToggle
                 value={activeLayer}
