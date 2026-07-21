@@ -145,9 +145,27 @@ function RegionSingle({
                     {region.title}
                 </h2>
                 <div className="flex items-center gap-2 pl-4">
-                    <IconButton onClick={onCompare} label="Compare">
-                        <ArrowRightLeft className="h-5 w-5" />
-                    </IconButton>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <IconButton onClick={onCompare} label="Compare">
+                                <ArrowRightLeft className="h-5 w-5" />
+                            </IconButton>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="text-gray-800 z-500 bg-white/50 backdrop-blur-2xl backdrop-saturate-150">
+                            <Popover>
+                                <PopoverTrigger>
+                                    <CircleQuestionMark scale='0.1'/>
+                                </PopoverTrigger>
+                                <PopoverContent side="bottom" className='z-500 mt-3 bg-white/50 backdrop-blur-2xl backdrop-saturate-150 text-gray-700'>
+                                    <PopoverHeader>
+                                        <PopoverTitle>Compare Locations</PopoverTitle>
+                                        <PopoverDescription className="text-xs">Select areas you are interested in to compare metrics and data  </PopoverDescription>
+                                    </PopoverHeader>
+                                </PopoverContent>
+                            </Popover>
+                            <p>Comparison</p>
+                        </TooltipContent>
+                    </Tooltip>
                     <IconButton onClick={onClose} label="Close">
                         <X className="h-5 w-5" />
                     </IconButton>
