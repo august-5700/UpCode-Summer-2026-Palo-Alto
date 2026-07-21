@@ -23,7 +23,7 @@ export default function ListingsViewer({
 	onRemoveListing,
 }: ListingsViewerProps) {
 	return (
-		<div className="w-76">
+		<div className="w-full h-full">
 			{/* Status */}
 			{meta && meta.rentalCount && meta.rentalTotal && meta.complete && (
 				<div className="flex flex-col gap-1.5">
@@ -41,7 +41,7 @@ export default function ListingsViewer({
 			)}
 
 			{/* Results */}
-			<div className="w-74 -mx-2 grid grid-cols-1 gap-2 overflow-y-auto px-2">
+			<div className="w-full h-[calc(90%)] -mx-2 grid grid-cols-1 gap-2 overflow-y-scroll px-2">
 				{listings.length === 0 && (
 					<p className="py-8 text-center text-sm text-gray-400">
 						No listings returned. Try a denser city or raise the limit.

@@ -79,7 +79,7 @@ export function Search({handleSubmit}: SearchProps) {
           }} 
       />
       </TooltipTrigger>
-      <TooltipContent side='right' className="bg-white text-gray-800 ml-10">
+      <TooltipContent side='right' className="bg-white text-gray-800">
           <p >Search</p>
           <Popover>
             <PopoverTrigger>

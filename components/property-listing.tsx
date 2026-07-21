@@ -64,7 +64,7 @@ export function PropertyListing({l, onListingSelect, onCompareListing, onRemoveL
         >
             <div className="flex relative items-start justify-between gap-3">
                 <div className="min-w-0">
-                    <p className="truncate font-semibold text-gray-900">
+                    <p className="truncate bg-red-500 font-semibold text-gray-900">
                         {(l.address ?? '—').split(`, ${title}`)[0]}
                     </p>
                     <p className="text-xs capitalize text-gray-500">
