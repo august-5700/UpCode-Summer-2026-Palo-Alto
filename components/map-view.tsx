@@ -97,6 +97,9 @@ export default function MapView() {
     useEffect(() => { sidebarRef.current = visibleSidebar; }, [visibleSidebar]);
     useEffect(() => { guidingRef.current = guiding; }, [guiding]);
 
+    const listingFiltersRef = useRef(listingFilters);
+    useEffect(() => { listingFiltersRef.current = listingFilters; }, [listingFilters]);
+
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const anchorRef = useRef<{ x: number; y: number } | null>(null);
     const latestRef = useRef<Hover>(null);
@@ -205,6 +208,7 @@ export default function MapView() {
             setSidebar({
                 level: null,
             })
+            console.log("filter values:", listingFiltersRef.current);
             const ranked = prepareWithDefaults(listings);
             setGuiding(null);
             setSidebar({
