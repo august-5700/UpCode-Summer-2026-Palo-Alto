@@ -23,6 +23,9 @@ import { MarkerType, SidebarContent, TractData } from "@/utils/types";
 import LoadingToast from "./loading-toast";
 import SummaryToast from "./summary-toast";
 import { summary } from "@/utils/ai";
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
+import { Popover, PopoverContent, PopoverDescription, PopoverHeader, PopoverTitle, PopoverTrigger } from './ui/popover';
+import { CircleQuestionMark } from "lucide-react";
 
 type Hover = { block: any; x: number; y: number; countyName: string | null } | null;
 
@@ -428,21 +431,37 @@ export default function MapView() {
                     }
                 }}
             />
-
-            <button
-                disabled={!enableListingsButton || fetchingListings}
-                onClick={() => {
-                    if (enableListingsButton && !fetchingListings) handleViewListingBtn();
-                }}
-                className={cn(
-                    "absolute right-4 bottom-4 z-100 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-lg  transition duration-300",
-                    enableListingsButton && !fetchingListings
-                        ? "bg-blue-600 hover:bg-blue-700"
-                        : "bg-gray-400 hover:bg-gray-500 cursor-not-allowed"
-                )}
-            >
-                {fetchingListings ? 'Fetching…' : 'View Listings'}
-            </button>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <button
+                        disabled={!enableListingsButton || fetchingListings}
+                        onClick={() => {
+                            if (enableListingsButton && !fetchingListings) handleViewListingBtn();
+                        }}
+                        className={cn(
+                            " absolute right-4 bottom-4 z-100 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-lg  transition duration-300",
+                            enableListingsButton && !fetchingListings
+                                ? "bg-blue-600 hover:bg-blue-700"
+                                : "bg-gray-400 hover:bg-gray-500 cursor-not-allowed"
+                        )}
+                    >
+                        {fetchingListings ? 'Fetching…' : 'View Listings'}
+                    </button>
+                </TooltipTrigger>
+                <TooltipContent side='left' className="bg-white/50 text-gray-800 backdrop-blur-2xl backdrop-saturate-150">
+                    <Popover>
+                        <PopoverTrigger>
+                            <CircleQuestionMark scale='0.1'/>
+                        </PopoverTrigger>
+                        <PopoverContent side="top" className='mb-3 bg-white/50 backdrop-blur-2xl backdrop-saturate-150 text-gray-700'>
+                            <PopoverHeader>
+                                <PopoverTitle>Find Listings In An Area</PopoverTitle>
+                                <PopoverDescription className='text-xs'>Click to find listings in cities of the shown area. Only works when zoomed in</PopoverDescription>
+                            </PopoverHeader>
+                        </PopoverContent>
+                    </Popover>
+                </TooltipContent>
+            </Tooltip>
         </>
     );
 }

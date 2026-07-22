@@ -39,7 +39,7 @@ export function LayersToggle({value, onValueChange}: LayersToggleProps) {
                     <XOctagon className="size-4" />
                 </RadioGroupItem>
             </TooltipTrigger>
-            <TooltipContent side='right' className='z-100 bg-white text-gray-800'>
+            <TooltipContent side='right' className='z-100 bg-white/50 backdrop-blur-2xl backdrop-saturate-150 text-gray-800'>
                 <p>No Overlay</p>
             </TooltipContent>
         </Tooltip>
@@ -59,13 +59,13 @@ export function LayersToggle({value, onValueChange}: LayersToggleProps) {
                     <Flame className="size-4" />
                 </RadioGroupItem>
             </TooltipTrigger>
-            <TooltipContent side='right' className='z-100 bg-white text-black'>
+            <TooltipContent side='right' className='z-100 bg-white/50 backdrop-blur-2xl backdrop-saturate-150 text-black'>
                 <p>Heatmap Overlay</p>
                 <Popover>
                     <PopoverTrigger>
                         <CircleQuestionMark scale='0.1'/>
                     </PopoverTrigger> 
-                    <PopoverContent align="start" side='top' className="mb-2 w-40 px-4 py-3">
+                    <PopoverContent align="start" side='top' className="mb-2 w-40 px-4 py-3 bg-white/50 backdrop-blur-2xl backdrop-saturate-150">
                         <PopoverHeader>
                             <PopoverTitle>Shows localized intensity</PopoverTitle>
                             <PopoverDescription className='text-xs'>
@@ -92,13 +92,13 @@ export function LayersToggle({value, onValueChange}: LayersToggleProps) {
                     <Grid3X3 className="size-4" />
                 </RadioGroupItem>
             </TooltipTrigger>
-            <TooltipContent side='right' className='z-100 bg-white text-gray-800'>
+            <TooltipContent side='right' className='z-100 bg-white/50 backdrop-blur-2xl backdrop-saturate-150 text-gray-800'>
                 <p>Choropleth Overlay</p>
                 <Popover>
                     <PopoverTrigger>
                         <CircleQuestionMark scale='0.1'/>
                     </PopoverTrigger> 
-                    <PopoverContent align="start" side='top' className="mb-2 w-40 px-4 py-3">
+                    <PopoverContent align="start" side='top' className="mb-2 w-40 px-4 py-3 bg-white/50 backdrop-blur-2xl backdrop-saturate-150">
                         <PopoverHeader>
                             <PopoverTitle>Shows regional averages</PopoverTitle>
                             <PopoverDescription className='text-xs'>
@@ -125,13 +125,13 @@ export function LayersToggle({value, onValueChange}: LayersToggleProps) {
                     <Map className="size-4" />
                 </RadioGroupItem>
             </TooltipTrigger>
-            <TooltipContent side='right' className='z-100 bg-white text-gray-800'>
+            <TooltipContent side='right' className='z-100 bg-white/50 backdrop-blur-2xl backdrop-saturate-150 text-gray-800'>
                 <p>Default Overlay</p>
                 <Popover>
                     <PopoverTrigger>
                         <CircleQuestionMark scale='0.1'/>
                     </PopoverTrigger> 
-                    <PopoverContent align="start" side='top' className="mb-2 w-40 px-4 py-3">
+                    <PopoverContent align="start" side='top' className="mb-2 w-40 px-4 py-3 bg-white/50 backdrop-blur-2xl backdrop-saturate-150">
                         <PopoverHeader>
                             <PopoverTitle>Switches overlay based on zoom</PopoverTitle>
                             <PopoverDescription className='text-xs'>
