@@ -29,7 +29,7 @@ const RENTCAST_BASE = "https://api.rentcast.io/v1";
 const RENTCAST_PAGE_SIZE = 500;      // RentCast max per request
 const DEFAULT_SALE_LIMIT = 2000;
 const DEFAULT_RENT_LIMIT = 1500;
-const DEFAULT_EXPIRY_DAYS = 14;      // sale cache older than this is refetched
+const DEFAULT_EXPIRY_DAYS = 25;      // sale cache older than this is refetched
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 const RENTCAST_API_KEY = process.env.RENTCAST_API_KEY!;
@@ -81,7 +81,8 @@ function mapSale(r: SaleRow): SaleListing {
     bedrooms: r.bedrooms, bathrooms: r.bathrooms, squareFootage: r.square_footage,
     lotSize: r.lot_size, yearBuilt: r.year_built, ageYears: r.age_years,
     propertyType: r.property_type, status: r.status, daysOnMarket: r.days_on_market,
-    latitude: r.latitude, longitude: r.longitude, raw: r.raw, selected: false
+    latitude: r.latitude, longitude: r.longitude, raw: r.raw, selected: false,
+    compared: false
   };
 }
 

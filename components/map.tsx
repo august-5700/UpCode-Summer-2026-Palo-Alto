@@ -43,6 +43,8 @@ const minZoom = 2;
 const blockThreshold = 11;
 const subDivisions = 70;
 const AUTO_SWITCH_ZOOM = 11;
+const BOUNDS_PAD = 1.0; // fraction to expand fetch bounds beyond viewport
+const MAP_OVERSCAN = 0.2; // how far the map extends past each viewport edge (fraction of viewport)
 
 // Shared visibility rules — used by both refresh (to gate heavy work)
 // and updateLayerVisibility (to add/remove layers)
@@ -108,7 +110,7 @@ export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading,
         const bounds = map.getBounds()
 
         //padded bounds
-        const padBounds = bounds.pad(1.0)
+        const padBounds = bounds.pad(BOUNDS_PAD)
         setMapBounds(bounds)
 
         // Heatmap is off: skip the fetch, grid, attach, and setLatLngs entirely.
@@ -125,8 +127,7 @@ export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading,
             zoom >= blockThreshold
                 ? await getBlocksWithinRange(padBounds)
                 : await getCounties();
-        console.log("data")
-        console.log(raw)
+
 
         
         // Checks if the requestId is current and that there is a map
@@ -391,10 +392,10 @@ return (
             ref={containerRef}
             className="absolute z-0"
             style={{
-                width: '200vw',
-                height: '200vh',
-                left: '-50vw',
-                top: '-50vh',
+                width: `${100 + 2 * MAP_OVERSCAN * 100}vw`,
+                height: `${100 + 2 * MAP_OVERSCAN * 100}vh`,
+                left: `-${MAP_OVERSCAN * 100}vw`,
+                top: `-${MAP_OVERSCAN * 100}vh`,
             }}
         />
 

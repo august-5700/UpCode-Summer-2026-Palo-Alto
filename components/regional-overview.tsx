@@ -9,7 +9,7 @@ interface RegionalOverviewProps {
 
 export default function RegionalOverview({data}: RegionalOverviewProps){
     return (
-      <section className="flex flex-col items-center w-54">
+      <section className="flex flex-col items-center w-[95%]">
         <p className="self-start text-xs font-semibold uppercase tracking-wider text-gray-500">
           HeatMap Score
         </p>
@@ -44,7 +44,7 @@ export default function RegionalOverview({data}: RegionalOverviewProps){
               style={{ width: `${data.score * 10}%` }}
             >
               <div
-                className="h-full bg-[linear-gradient(to_right,#ef4444,#f59e0b,#eab308,#22c55e,#3b82f6)]"
+                className="h-full bg-[linear-gradient(to_right,#ef4444,#f59e0b,#eab308,#22c55e)]"
                 style={{ width: `${1000 / data.score}%` }}
               />
             </div>

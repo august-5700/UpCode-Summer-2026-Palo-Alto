@@ -116,7 +116,7 @@ export async function getBlockByCoords(
   
 
   return {
-    title: `${county?.name ?? "Unknown County"} · Tract ${block.tract_code}`,
+    title: `${county?.name ?? "Unknown County"} · Block ${block.tract_code}`,
     score,
     regional: null, // TODO: needs a percentile across the dataset (we can use Postgres RPC)
     national: null, // TODO same reason as above

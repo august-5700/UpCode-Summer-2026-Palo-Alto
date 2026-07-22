@@ -13,6 +13,7 @@ import { getResultFromAddressAutocomplete } from "@/utils/api";
 import { SaleListing } from "@/utils/listings.types";
 import { pricePerSqft } from "@/utils/listings/listingFilters";
 import { GeoData } from "@/utils/types";
+import { zillowUrl } from "@/utils/zillow";
 
 import { ArrowRightLeft, DollarSign, Search as SearchIcon, X } from 'lucide-react';
 import { useState } from "react";
@@ -46,7 +47,7 @@ interface PropertyListingProps {
 
 
 export function PropertyListing({l, onListingSelect, onCompareListing, onRemoveListing, ranked, title}: PropertyListingProps) {
-
+    console.count("propl render");
     return (
         <div
             key={l.id}
@@ -63,8 +64,8 @@ export function PropertyListing({l, onListingSelect, onCompareListing, onRemoveL
             }}
         >
             <div className="flex relative items-start justify-between gap-3">
-                <div className="min-w-0">
-                    <p className="truncate font-semibold text-gray-900">
+                <div className="min-w-0 w-50">
+                    <p className="w-full truncate font-semibold text-gray-900">
                         {(l.address ?? '—').split(`, ${title}`)[0]}
                     </p>
                     <p className="text-xs capitalize text-gray-500">
@@ -79,7 +80,7 @@ export function PropertyListing({l, onListingSelect, onCompareListing, onRemoveL
                 </div>
             </div>
             <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600">
-                <span>Est. rent {money(l.estimatedRent)}/mo</span>
+                <span className="underline decoration-blue-500">Est. rent {money(l.estimatedRent)}/mo</span>
 
                 <span>{l.squareFootage ? l.squareFootage.toLocaleString() + ' sq•ft' : 'sq•ft n/a'}</span>
 
@@ -103,7 +104,7 @@ export function PropertyListing({l, onListingSelect, onCompareListing, onRemoveL
                 </div>
             )}
             {l.selected && (
-                <div className="mt-3 grid grid-cols-6 text-xs text-gray-600 gap-x-3">
+                <div className="mt-3 grid grid-cols-7 text-xs text-gray-600 gap-x-3">
                     <button
                         className="flex col-span-3 items-center justify-center rounded-full py-1 px-2 gap-x-1 text-xs font-semibold text-white shadow-lg transition duration-300 bg-blue-600 hover:bg-blue-700"
                         onClick={()=>onCompareListing(l)}
@@ -111,19 +112,23 @@ export function PropertyListing({l, onListingSelect, onCompareListing, onRemoveL
                         <ArrowRightLeft className="h-3 w-3"/>
                         Compare
                     </button>
-                    <button
-                        // ZILLOW PLUGIN ONCLICK
-                        className="flex col-span-2 items-center justify-center rounded-full py-1 px-2 gap-x-1 text-xs font-semibold text-white shadow-lg transition duration-300 bg-green-600 hover:bg-green-700"
+                    <div className='col-span-1'/>
+                    <a
+                        href={zillowUrl(l.address) ?? undefined}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        aria-disabled={!l.address}
+                        className={cn(
+                            "flex col-span-3 items-center justify-center rounded-full py-1 px-2 gap-x-1 text-xs font-semibold text-white shadow-lg transition duration-300",
+                            l.address
+                                ? "bg-green-600 hover:bg-green-700"
+                                : "bg-gray-400 cursor-not-allowed pointer-events-none"
+                        )}
                     >
                         <DollarSign className='h-3 w-3' />
                         Zillow
-                    </button>
-                    <button
-                        onClick={()=>onRemoveListing(l)}
-                        className="flex col-span-1 items-center justify-center rounded-full p-1 gap-x-1 text-xs font-semibold text-white shadow-lg transition duration-300 bg-red-600 hover:bg-red-700"
-                    >
-                        <X className='h-4 w-4' />
-                    </button>
+                    </a>
                 </div>
             )}
         </div>

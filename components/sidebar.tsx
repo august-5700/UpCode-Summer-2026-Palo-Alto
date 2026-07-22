@@ -36,9 +36,9 @@ const SINGLE_WIDTH: Record<'block' | 'county' | 'listing', string> = {
     listing: 'w-96',
 };
 const COMPARE_WIDTH: Record<'block' | 'county' | 'listing', string> = {
-    block: 'w-[48rem]',
+    block: 'w-[42rem]',
     county: 'w-[48rem]',
-    listing: 'w-[48rem]',
+    listing: 'w-[37rem]',
 };
 
 const money = (v: number | null | undefined) =>
@@ -79,7 +79,11 @@ export default function Sidebar({
                 widthClass
             )}
         >
-            <Card className="min-h-full max-h-187.5 w-full flex flex-col rounded-3xl border border-white/40 bg-white/50 p-6 shadow-2xl backdrop-blur-2xl backdrop-saturate-150">
+            <Card className={cn("w-full flex flex-col rounded-3xl border border-white/40 bg-white/50 p-6 shadow-2xl backdrop-blur-2xl backdrop-saturate-150",
+                level == null ? "h-24" : 
+                isComparing ? "max-h-[calc(100vh-30px)]": 
+                "h-[calc(100vh-30px)]"
+            )}>
                 {level == null && (
                     <p className="text-sm italic text-gray-500">
                         Select properties, counties, or blocks to view them here in the sidebar
@@ -139,8 +143,8 @@ function RegionSingle({
     onClose: () => void;
 }) {
     return (
-        <div className="space-y-4 w-70">
-            <div className="flex items-start justify-between w-70">
+        <div className="space-y-4 w-full ">
+            <div className="flex items-start justify-between w-full">
                 <h2 className="text-2xl font-bold tracking-tight text-gray-900">
                     {region.title}
                 </h2>
@@ -237,8 +241,8 @@ function ListingBrowse({
     onRemoveListing: (l: SaleListing) => void;
 }) {
     return (
-        <div className="space-y-4 w-76">
-            <div className="flex items-start justify-between w-76">
+        <div className="space-y-4 w-full h-full">
+            <div className="flex items-start justify-between w-full">
                 <h2 className="text-2xl font-bold tracking-tight text-gray-900">{title}</h2>
                 <IconButton onClick={onClose} label="Close">
                     <X className="h-5 w-5" />
