@@ -47,7 +47,7 @@ interface PropertyListingProps {
 
 
 export function PropertyListing({l, onListingSelect, onCompareListing, onRemoveListing, ranked, title}: PropertyListingProps) {
-
+    console.count("propl render");
     return (
         <div
             key={l.id}
@@ -128,12 +128,6 @@ export function PropertyListing({l, onListingSelect, onCompareListing, onRemoveL
                         <DollarSign className='h-3 w-3' />
                         Zillow
                     </a>
-                    <button
-                        onClick={()=>onRemoveListing(l)}
-                        className="flex col-span-1 items-center justify-center rounded-full p-1 gap-x-1 text-xs font-semibold text-white shadow-lg transition duration-300 bg-red-600 hover:bg-red-700"
-                    >
-                        <X className='h-4 w-4' />
-                    </button>
                 </div>
             )}
         </div>
