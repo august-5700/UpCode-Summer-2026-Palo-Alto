@@ -5,10 +5,15 @@ import { X } from 'lucide-react';
 
 interface SummaryToastProps {
     text: string | null;
+    title?: string;
     onClose: () => void;
 }
 
-export default function SummaryToast({ text, onClose }: SummaryToastProps) {
+export default function SummaryToast({
+    text,
+    title = 'Regional Fact',
+    onClose,
+}: SummaryToastProps) {
     return (
         <AnimatePresence>
             {text && (
@@ -22,7 +27,7 @@ export default function SummaryToast({ text, onClose }: SummaryToastProps) {
                     <div className="flex items-start gap-3 rounded-2xl border border-white/40 bg-white/50 px-5 py-4 shadow-xl backdrop-blur-2xl backdrop-saturate-150">
                         <div>
                             <p className="self-start text-xs uppercase tracking-wider text-gray-500">
-                                Regional Fact
+                                {title}
                             </p>
                             <p className="flex-1 text-sm leading-relaxed text-gray-800">{text}</p>
                             <p className="text-end text-[9px] font-medium uppercase tracking-wider text-gray-500">

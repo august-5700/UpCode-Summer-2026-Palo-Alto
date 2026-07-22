@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map from "./map";
 import Sidebar from "./sidebar";
 import MapTooltip from "./map-tooltip";
@@ -12,6 +12,14 @@ import {
     getCountyByCityState,
 } from "@/utils/api";
 import { Search } from "./search";
+import {
+    Filters,
+    DEFAULT_FILTER_VALUES,
+    MAX_PRICE,
+    MAX_DOM,
+    type ListingFilterValues,
+} from "./filters";
+import { makeManualFilter } from "@/utils/listings/listingFilters";
 import { LayersToggle } from "./layer-toggle";
 import { cn } from "@/lib/utils";
 import { getListings, getListingsInArea } from "@/utils/listings";
@@ -24,6 +32,8 @@ import LoadingToast from "./loading-toast";
 import SummaryToast from "./summary-toast";
 import { summary } from "@/utils/ai";
 import { VIEW_LISTINGS_PROMPT } from "@/prompts/viewListingsPrompt";
+import { COMPARE_REGIONS_PROMPT } from "@/prompts/compareRegionsPrompt";
+import { COMPARE_LISTINGS_PROMPT } from "@/prompts/compareListingsPrompt";
 
 type Hover = { block: any; x: number; y: number; countyName: string | null } | null;
 
@@ -54,15 +64,48 @@ export default function MapView() {
     const [fetchingListings, setFetchingListings] = useState(false);
     const [listingsCity, setListingsCity] = useState<string | null>(null);
     const [areaFact, setAreaFact] = useState<string | null>(null);
+    const [summaryTitle, setSummaryTitle] = useState("Regional Fact");
+    const [listingFilters, setListingFilters] =
+        useState<ListingFilterValues>(DEFAULT_FILTER_VALUES);
     const factSeqRef = useRef(0);
     const [activeLayer, setActiveLayer] = useState<
         "default" | "heatmap" | "choropleth" | "none"
     >("default");
 
-    const sidebarRef = useRef(sidebar);
+    const manualFilter = useMemo(
+        () =>
+            makeManualFilter({
+                minPrice: listingFilters.minPrice || undefined,
+                maxPrice:
+                    listingFilters.maxPrice < MAX_PRICE ? listingFilters.maxPrice : undefined,
+                minBeds: listingFilters.minBeds || undefined,
+                maxDaysOnMarket:
+                    listingFilters.maxDaysOnMarket < MAX_DOM
+                        ? listingFilters.maxDaysOnMarket
+                        : undefined,
+                minYield: listingFilters.minYield
+                    ? listingFilters.minYield / 100
+                    : undefined,
+            }),
+        [listingFilters]
+    );
+
+    const visibleSidebar = useMemo<SidebarContent>(() => {
+        if (sidebar.level !== "listing") return sidebar;
+        // Manual filter runs through the same pipeline as the defaults + score,
+        // reactively — adjusting the Filters panel re-filters the loaded set
+        // without a refetch.
+        return { ...sidebar, listings: prepareWithDefaults(sidebar.listings, [manualFilter]) };
+    }, [sidebar, manualFilter]);
+
+    const sidebarRef = useRef(visibleSidebar);
     const guidingRef = useRef(guiding);
-    useEffect(() => { sidebarRef.current = sidebar; }, [sidebar]);
+    useEffect(() => { sidebarRef.current = visibleSidebar; }, [visibleSidebar]);
     useEffect(() => { guidingRef.current = guiding; }, [guiding]);
+
+    const listingFiltersRef = useRef(listingFilters);
+    useEffect(() => { listingFiltersRef.current = listingFilters; }, [listingFilters]);
+
 
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const anchorRef = useRef<{ x: number; y: number } | null>(null);
@@ -71,9 +114,9 @@ export default function MapView() {
     const ENABLE_LISTINGS_BUTTON_LEVEL = 8;
 
     useEffect(() => {
-        if (sidebar.level === "listing") {
+        if (visibleSidebar.level === "listing") {
             setMarkerPoints(
-                sidebar.listings.map((l) => ({
+                visibleSidebar.listings.map((l) => ({
                     lat: l.latitude,
                     lng: l.longitude,
                     address: l.address,
@@ -83,7 +126,7 @@ export default function MapView() {
         } else {
             setMarkerPoints([]);
         }
-    }, [sidebar]);
+    }, [visibleSidebar]);
 
     useEffect(() => {
         getCounties().then((counties: any[]) => {
@@ -172,13 +215,17 @@ export default function MapView() {
             setSidebar({
                 level: null,
             })
-            const ranked = prepareWithDefaults(listings);
+            console.log("filter values:", listingFiltersRef.current);
+
+            // Store the raw listings; visibleSidebar runs prepareWithDefaults
+            // (filters + score + the manual filter) reactively, so preparing
+            // here too would just be redundant work.
             setGuiding(null);
             setSidebar({
                 level: "listing",
                 title,
                 region,
-                listings: ranked,
+                listings,
                 comparing: [],
                 meta,
             });
@@ -186,17 +233,75 @@ export default function MapView() {
         []
     );
 
-    const runAreaFact = useCallback(
-        async (seq: number, context: Record<string, unknown>) => {
+    const runSummary = useCallback(
+        async (
+            seq: number,
+            prompt: string,
+            context: Record<string, unknown>,
+            title: string
+        ) => {
             try {
-                const text = await summary(VIEW_LISTINGS_PROMPT, context);
+                const text = await summary(prompt, context);
                 if (seq !== factSeqRef.current) return;
                 const trimmed = text.trim();
-                if (trimmed) setAreaFact(trimmed);
+                if (trimmed) {
+                    setAreaFact(trimmed);
+                    setSummaryTitle(title);
+                }
             } catch {}
         },
         []
     );
+
+    const runAreaFact = useCallback(
+        (seq: number, context: Record<string, unknown>) =>
+            runSummary(seq, VIEW_LISTINGS_PROMPT, context, "Regional Fact"),
+        [runSummary]
+    );
+
+    const comparison = useMemo(() => {
+        if (sidebar.level === "county" || sidebar.level === "block") {
+            if (sidebar.regions.length < 2) return null;
+            return {
+                key: `region:${sidebar.regions.map((r) => r.title).join("|")}`,
+                prompt: COMPARE_REGIONS_PROMPT,
+                context: { areas: sidebar.regions } as Record<string, unknown>,
+            };
+        }
+        if (sidebar.level === "listing" && sidebar.comparing.length >= 2) {
+            return {
+                key: `listing:${sidebar.comparing.map((l) => l.id).join("|")}`,
+                prompt: COMPARE_LISTINGS_PROMPT,
+                context: {
+                    properties: sidebar.comparing.map((l) => ({
+                        address: l.address,
+                        price: l.price,
+                        estimatedRent: l.estimatedRent,
+                        annualRentToPrice: l.annualRentToPrice,
+                        bedrooms: l.bedrooms,
+                        bathrooms: l.bathrooms,
+                        squareFootage: l.squareFootage,
+                        yearBuilt: l.yearBuilt,
+                        propertyType: l.propertyType,
+                        daysOnMarket: l.daysOnMarket,
+                    })),
+                } as Record<string, unknown>,
+            };
+        }
+        return null;
+    }, [sidebar]);
+
+    const comparisonKey = comparison?.key ?? null;
+    const comparisonRef = useRef(comparison);
+    useEffect(() => { comparisonRef.current = comparison; }, [comparison]);
+
+    useEffect(() => {
+        const c = comparisonRef.current;
+        if (!comparisonKey || !c) return;
+        const seq = ++factSeqRef.current;
+        setAreaFact(null);
+        runSummary(seq, c.prompt, c.context, "Comparison Information");
+    }, [comparisonKey, runSummary]);
 
     const viewListings = useCallback(async (item: string[]) => {
         if (item.length !== 2) return;
@@ -258,6 +363,7 @@ export default function MapView() {
                 if (factSeq !== factSeqRef.current || !region) return;
                 const city = cityRange?.[0]?.[0]?.trim();
                 const state = cityRange?.[0]?.[1]?.trim();
+                
                 runAreaFact(factSeq, {
                     location: city ? `${city}${state ? `, ${state}` : ""}` : undefined,
                     coordinates: { lat: center.lat, lng: center.lng },
@@ -272,11 +378,12 @@ export default function MapView() {
         for (const [city, state] of cityRange as [string, string][]) {
             const c = city.trim();
             const s = state.trim();
+            setListingsCity(c);
             console.log(`[ViewListings] fetching listings for ${c}, ${s}`);
             const data = await getListings(c, s, 2000, 1000);
-            console.log(
-                `[ViewListings] ${c}, ${s} -> ${data.listings.length} listings cached`
-            );
+            // console.log(
+            //     `[ViewListings] ${c}, ${s} -> ${data.listings.length} listings cached`
+            // );
         }
 
         // 3. Now read every listing in the viewport from the populated DB.
@@ -286,7 +393,7 @@ export default function MapView() {
             mapBounds.getEast(),
             mapBounds.getNorth()
         );
-        console.log(`[ViewListings] area query -> ${listings.length} listings`);
+        // console.log(`[ViewListings] area query -> ${listings.length} listings`);
 
         const region = await regionPromise;
         const title = cityRange?.[0]?.[0]?.trim() || "this area";
@@ -394,7 +501,11 @@ export default function MapView() {
                 loading={fetchingListings}
                 message={listingsCity ? `Fetching listings in ${listingsCity}` : undefined}
             />
-            <SummaryToast text={areaFact} onClose={() => setAreaFact(null)} />
+            <SummaryToast
+                text={areaFact}
+                title={summaryTitle}
+                onClose={() => setAreaFact(null)}
+            />
 
             <Map
                 onSelectCoords={onMapSelect}
@@ -410,7 +521,7 @@ export default function MapView() {
             />
 
             <Sidebar
-                content={sidebar}
+                content={visibleSidebar}
                 onClose={closeSidebar}
                 onStartCompare={startCompare}
                 onStartListingCompare={startListingCompare}
@@ -435,6 +546,8 @@ export default function MapView() {
                     viewListings(item);
                 }}
             />
+
+            <Filters value={listingFilters} onChange={setListingFilters} />
 
             <LayersToggle
                 value={activeLayer}
