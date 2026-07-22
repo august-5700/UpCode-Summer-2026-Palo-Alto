@@ -30,7 +30,8 @@ import L from "leaflet";
 import { MarkerType, SidebarContent, TractData } from "@/utils/types";
 import LoadingToast from "./loading-toast";
 import SummaryToast from "./summary-toast";
-import { summary } from "@/utils/ai";
+import { summary, webSearchSummary } from "@/utils/ai";
+import { HOME_INFO_PROMPT } from "@/prompts/homeInfoPrompt";
 import { VIEW_LISTINGS_PROMPT } from "@/prompts/viewListingsPrompt";
 import { COMPARE_REGIONS_PROMPT } from "@/prompts/compareRegionsPrompt";
 import { COMPARE_LISTINGS_PROMPT } from "@/prompts/compareListingsPrompt";
@@ -261,6 +262,27 @@ export default function MapView() {
             runSummary(seq, VIEW_LISTINGS_PROMPT, context, "Regional Fact"),
         [runSummary]
     );
+
+    const handleHomeInfo = useCallback(async (l: SaleListing) => {
+        const seq = ++factSeqRef.current;
+        setAreaFact(null);
+        setSummaryTitle("Home Info");
+        try {
+            const text = await webSearchSummary(HOME_INFO_PROMPT, {
+                address: l.address,
+                price: l.price,
+                bedrooms: l.bedrooms,
+                bathrooms: l.bathrooms,
+                squareFootage: l.squareFootage,
+                yearBuilt: l.yearBuilt,
+                propertyType: l.propertyType,
+                daysOnMarket: l.daysOnMarket,
+            });
+            if (seq !== factSeqRef.current) return;
+            const trimmed = text.trim();
+            if (trimmed) setAreaFact(trimmed);
+        } catch {}
+    }, []);
 
     const comparison = useMemo(() => {
         if (sidebar.level === "county" || sidebar.level === "block") {
@@ -528,6 +550,7 @@ export default function MapView() {
                 onClose={closeSidebar}
                 onStartCompare={startCompare}
                 onStartListingCompare={startListingCompare}
+                onHomeInfo={handleHomeInfo}
                 onRemoveSet={removeSet}
                 onRemoveListing={removeListing}
                 onListingSelect={handleListingSelect}

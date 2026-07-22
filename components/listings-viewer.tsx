@@ -10,6 +10,7 @@ interface ListingsViewerProps {
 	onListingSelect: (listing: SaleListing) => void;
 	onCompareListing: (l: SaleListing) => void;
 	onRemoveListing: (l: SaleListing) => void;
+	onHomeInfo: (l: SaleListing) => void;
 }
 
 // Controlled: renders exactly the listings it's given. Removing a listing bubbles
@@ -21,6 +22,7 @@ export default function ListingsViewer({
 	onListingSelect,
 	onCompareListing,
 	onRemoveListing,
+	onHomeInfo,
 }: ListingsViewerProps) {
 	return (
 		<div className="w-full h-full">
@@ -56,6 +58,7 @@ export default function ListingsViewer({
 						onListingSelect={onListingSelect}
 						onCompareListing={onCompareListing}
 						onRemoveListing={onRemoveListing}
+						onHomeInfo={onHomeInfo}
 					/>
 				))}
 			</div>

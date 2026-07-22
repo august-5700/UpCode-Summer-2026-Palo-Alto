@@ -15,7 +15,7 @@ import { pricePerSqft } from "@/utils/listings/listingFilters";
 import { GeoData } from "@/utils/types";
 import { zillowUrl } from "@/utils/zillow";
 
-import { ArrowRightLeft, DollarSign, Search as SearchIcon, X } from 'lucide-react';
+import { ArrowRightLeft, DollarSign, Info, Loader2, Search as SearchIcon, X } from 'lucide-react';
 import { useState } from "react";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
@@ -43,6 +43,7 @@ interface PropertyListingProps {
         onListingSelect: (listing: SaleListing) => void;
         onCompareListing: (listing: SaleListing) => void;
         onRemoveListing: (listing: SaleListing) => void;
+        onHomeInfo: (listing: SaleListing) => void | Promise<void>;
         ranked: SaleListing[]
         title: string
 
@@ -50,7 +51,8 @@ interface PropertyListingProps {
 
 
 
-export function PropertyListing({l, onListingSelect, onCompareListing, onRemoveListing, ranked, title}: PropertyListingProps) {
+export function PropertyListing({l, onListingSelect, onCompareListing, onRemoveListing, onHomeInfo, ranked, title}: PropertyListingProps) {
+    const [infoLoading, setInfoLoading] = useState(false);
     console.count("propl render");
     return (
         <div
@@ -135,7 +137,33 @@ export function PropertyListing({l, onListingSelect, onCompareListing, onRemoveL
                         <ArrowRightLeft className="h-3 w-3"/>
                         Compare
                     </button>
-                    <div className='col-span-1'/>
+                    <button
+                        onClick={async (e) => {
+                            e.stopPropagation();
+                            if (infoLoading) return;
+                            setInfoLoading(true);
+                            try {
+                                await onHomeInfo(l);
+                            } finally {
+                                setInfoLoading(false);
+                            }
+                        }}
+                        disabled={infoLoading}
+                        aria-label="Home info"
+                        aria-busy={infoLoading}
+                        className={cn(
+                            "flex col-span-1 items-center justify-center rounded-full py-1 px-2 gap-x-1 text-xs font-semibold text-white shadow-lg transition duration-300",
+                            infoLoading
+                                ? "bg-purple-400 cursor-wait"
+                                : "bg-purple-600 hover:bg-purple-700"
+                        )}
+                    >
+                        {infoLoading ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                            <Info className="h-3 w-3" />
+                        )}
+                    </button>
                     <a
                         href={zillowUrl(l.address) ?? undefined}
                         target="_blank"
