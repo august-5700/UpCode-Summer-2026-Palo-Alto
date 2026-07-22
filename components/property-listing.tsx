@@ -93,7 +93,7 @@ export function PropertyListing({l, onListingSelect, onCompareListing, onRemoveL
                             <PopoverTrigger>
                                 <CircleQuestionMark scale='0.1' />
                             </PopoverTrigger>
-                            <PopoverContent side='bottom' className='mt-3 bg-white/50 backdrop-blur-2xl backdrop-saturate-150 text-gray-700'>
+                            <PopoverContent side='bottom' className='mt-3 bg-white/50 backdrop-blur-2xl backdrop-saturate-150 text-gray-700 z-500'>
                                 <PopoverHeader>
                                     <PopoverTitle>Estimated Rent Of The Selected Property</PopoverTitle>
                                     <PopoverDescription>
