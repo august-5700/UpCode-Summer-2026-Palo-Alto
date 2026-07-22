@@ -104,7 +104,7 @@ export function PropertyListing({l, onListingSelect, onCompareListing, onRemoveL
                 </div>
             )}
             {l.selected && (
-                <div className="mt-3 grid grid-cols-6 text-xs text-gray-600 gap-x-3">
+                <div className="mt-3 grid grid-cols-7 text-xs text-gray-600 gap-x-3">
                     <button
                         className="flex col-span-3 items-center justify-center rounded-full py-1 px-2 gap-x-1 text-xs font-semibold text-white shadow-lg transition duration-300 bg-blue-600 hover:bg-blue-700"
                         onClick={()=>onCompareListing(l)}
@@ -112,6 +112,7 @@ export function PropertyListing({l, onListingSelect, onCompareListing, onRemoveL
                         <ArrowRightLeft className="h-3 w-3"/>
                         Compare
                     </button>
+                    <div className='col-span-1'/>
                     <a
                         href={zillowUrl(l.address) ?? undefined}
                         target="_blank"
@@ -119,7 +120,7 @@ export function PropertyListing({l, onListingSelect, onCompareListing, onRemoveL
                         onClick={(e) => e.stopPropagation()}
                         aria-disabled={!l.address}
                         className={cn(
-                            "flex col-span-2 items-center justify-center rounded-full py-1 px-2 gap-x-1 text-xs font-semibold text-white shadow-lg transition duration-300",
+                            "flex col-span-3 items-center justify-center rounded-full py-1 px-2 gap-x-1 text-xs font-semibold text-white shadow-lg transition duration-300",
                             l.address
                                 ? "bg-green-600 hover:bg-green-700"
                                 : "bg-gray-400 cursor-not-allowed pointer-events-none"
