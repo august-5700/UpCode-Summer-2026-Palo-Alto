@@ -18,6 +18,10 @@ import { zillowUrl } from "@/utils/zillow";
 import { ArrowRightLeft, DollarSign, Search as SearchIcon, X } from 'lucide-react';
 import { useState } from "react";
 
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
+import { Popover, PopoverContent, PopoverDescription, PopoverHeader, PopoverTitle, PopoverTrigger } from './ui/popover';
+import { CircleQuestionMark} from 'lucide-react'
+
 const money = (v: number | null) => (v == null ? '—' : `$${Math.round(v).toLocaleString()}`);
 
 const percent = (v: number | null) => (v == null ? '—' : `${(v * 100).toFixed(2)}%`);
@@ -80,8 +84,27 @@ export function PropertyListing({l, onListingSelect, onCompareListing, onRemoveL
                 </div>
             </div>
             <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600">
-                <span className="underline decoration-blue-500">Est. rent {money(l.estimatedRent)}/mo</span>
-
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <span className="underline decoration-blue-500">Est. rent {money(l.estimatedRent)}/mo</span>
+                    </TooltipTrigger>
+                    <TooltipContent side='left' className = "bg-white/50 text-gray-800 ml-10 backdrop-blur-2xl backdrop-saturate-150 z-500">
+                        <Popover>
+                            <PopoverTrigger>
+                                <CircleQuestionMark scale='0.1' />
+                            </PopoverTrigger>
+                            <PopoverContent side='bottom' className='mt-3 bg-white/50 backdrop-blur-2xl backdrop-saturate-150 text-gray-700'>
+                                <PopoverHeader>
+                                    <PopoverTitle>Estimated Rent Of The Selected Property</PopoverTitle>
+                                    <PopoverDescription>
+                                        The rent of the property is estimated based on similar surrounding listings. 
+                                        Due to estimations being based on listed properties instead off currently rented out listings the shown rent will be 10-15% higher than what is shown on Zillow
+                                    </PopoverDescription>
+                                </PopoverHeader>
+                            </PopoverContent>
+                        </Popover>
+                    </TooltipContent>
+                </Tooltip>
                 <span>{l.squareFootage ? l.squareFootage.toLocaleString() + ' sq•ft' : 'sq•ft n/a'}</span>
 
             </div>
