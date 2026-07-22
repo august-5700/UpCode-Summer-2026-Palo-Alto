@@ -89,7 +89,10 @@ export default function MapView() {
 
     const visibleSidebar = useMemo<SidebarContent>(() => {
         if (sidebar.level !== "listing") return sidebar;
-        return { ...sidebar, listings: sidebar.listings.filter(manualFilter) };
+        // Manual filter runs through the same pipeline as the defaults + score,
+        // reactively — adjusting the Filters panel re-filters the loaded set
+        // without a refetch.
+        return { ...sidebar, listings: prepareWithDefaults(sidebar.listings, [manualFilter]) };
     }, [sidebar, manualFilter]);
 
     const sidebarRef = useRef(visibleSidebar);
@@ -209,13 +212,16 @@ export default function MapView() {
                 level: null,
             })
             console.log("filter values:", listingFiltersRef.current);
-            const ranked = prepareWithDefaults(listings);
+
+            // Store the raw listings; visibleSidebar runs prepareWithDefaults
+            // (filters + score + the manual filter) reactively, so preparing
+            // here too would just be redundant work.
             setGuiding(null);
             setSidebar({
                 level: "listing",
                 title,
                 region,
-                listings: ranked,
+                listings,
                 comparing: [],
                 meta,
             });
