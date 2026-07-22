@@ -80,7 +80,7 @@ export function PropertyListing({l, onListingSelect, onCompareListing, onRemoveL
                 </div>
             </div>
             <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600">
-                <span>Est. rent {money(l.estimatedRent)}/mo</span>
+                <span className="underline decoration-blue-500">Est. rent {money(l.estimatedRent)}/mo</span>
 
                 <span>{l.squareFootage ? l.squareFootage.toLocaleString() + ' sq•ft' : 'sq•ft n/a'}</span>
 
