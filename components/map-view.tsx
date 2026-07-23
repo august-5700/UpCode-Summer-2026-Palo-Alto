@@ -607,7 +607,7 @@ export default function MapView() {
                                 : "bg-gray-400 hover:bg-gray-500 cursor-not-allowed"
                         )}
                     >
-                        {fetchingListings ? 'Fetching…' : 'View Listings'}
+                        {fetchingListings ? 'Fetching…' : 'View Listings in View'}
                     </button>
                 </TooltipTrigger>
                 <TooltipContent side='left' className="bg-white/50 text-gray-800 backdrop-blur-2xl backdrop-saturate-150">
