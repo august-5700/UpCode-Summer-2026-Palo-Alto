@@ -133,6 +133,7 @@ export default function Map({ onSelectCoords, onHover, onZoomChange, setLoading,
         // Checks if the requestId is current and that there is a map
         if(requestId !== requestIdRef.current || !mapRef.current) return;
 
+        heatPointsRef.current = raw;
 
         // Sorts raw data
 

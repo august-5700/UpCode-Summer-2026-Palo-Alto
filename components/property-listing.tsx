@@ -15,8 +15,12 @@ import { pricePerSqft } from "@/utils/listings/listingFilters";
 import { GeoData } from "@/utils/types";
 import { zillowUrl } from "@/utils/zillow";
 
-import { ArrowRightLeft, DollarSign, Search as SearchIcon, X } from 'lucide-react';
+import { ArrowRightLeft, DollarSign, Info, Loader2, Search as SearchIcon, X } from 'lucide-react';
 import { useState } from "react";
+
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
+import { Popover, PopoverContent, PopoverDescription, PopoverHeader, PopoverTitle, PopoverTrigger } from './ui/popover';
+import { CircleQuestionMark} from 'lucide-react'
 
 const money = (v: number | null) => (v == null ? '—' : `$${Math.round(v).toLocaleString()}`);
 
@@ -39,6 +43,7 @@ interface PropertyListingProps {
         onListingSelect: (listing: SaleListing) => void;
         onCompareListing: (listing: SaleListing) => void;
         onRemoveListing: (listing: SaleListing) => void;
+        onHomeInfo: (listing: SaleListing) => void | Promise<void>;
         ranked: SaleListing[]
         title: string
 
@@ -46,7 +51,8 @@ interface PropertyListingProps {
 
 
 
-export function PropertyListing({l, onListingSelect, onCompareListing, onRemoveListing, ranked, title}: PropertyListingProps) {
+export function PropertyListing({l, onListingSelect, onCompareListing, onRemoveListing, onHomeInfo, ranked, title}: PropertyListingProps) {
+    const [infoLoading, setInfoLoading] = useState(false);
     console.count("propl render");
     return (
         <div
@@ -80,8 +86,27 @@ export function PropertyListing({l, onListingSelect, onCompareListing, onRemoveL
                 </div>
             </div>
             <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600">
-                <span className="underline decoration-blue-500">Est. rent {money(l.estimatedRent)}/mo</span>
-
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <span className="underline decoration-blue-500">Est. rent {money(l.estimatedRent)}/mo</span>
+                    </TooltipTrigger>
+                    <TooltipContent side='left' className = "bg-white/50 text-gray-800 ml-10 backdrop-blur-2xl backdrop-saturate-150 z-500">
+                        <Popover>
+                            <PopoverTrigger>
+                                <CircleQuestionMark scale='0.1' />
+                            </PopoverTrigger>
+                            <PopoverContent side='bottom' className='mt-3 bg-white/50 backdrop-blur-2xl backdrop-saturate-150 text-gray-700 z-1000'>
+                                <PopoverHeader>
+                                    <PopoverTitle>Estimated Rent Of The Selected Property</PopoverTitle>
+                                    <PopoverDescription>
+                                        The rent of the property is estimated based on similar surrounding listings. 
+                                        Due to estimations being based on listed properties instead off currently rented out listings the shown rent will be 10-15% higher than what is shown on Zillow
+                                    </PopoverDescription>
+                                </PopoverHeader>
+                            </PopoverContent>
+                        </Popover>
+                    </TooltipContent>
+                </Tooltip>
                 <span>{l.squareFootage ? l.squareFootage.toLocaleString() + ' sq•ft' : 'sq•ft n/a'}</span>
 
             </div>
@@ -112,7 +137,33 @@ export function PropertyListing({l, onListingSelect, onCompareListing, onRemoveL
                         <ArrowRightLeft className="h-3 w-3"/>
                         Compare
                     </button>
-                    <div className='col-span-1'/>
+                    <button
+                        onClick={async (e) => {
+                            e.stopPropagation();
+                            if (infoLoading) return;
+                            setInfoLoading(true);
+                            try {
+                                await onHomeInfo(l);
+                            } finally {
+                                setInfoLoading(false);
+                            }
+                        }}
+                        disabled={infoLoading}
+                        aria-label="Home info"
+                        aria-busy={infoLoading}
+                        className={cn(
+                            "flex col-span-1 items-center justify-center rounded-full py-1 px-2 gap-x-1 text-xs font-semibold text-white shadow-lg transition duration-300",
+                            infoLoading
+                                ? "bg-purple-400 cursor-wait"
+                                : "bg-purple-600 hover:bg-purple-700"
+                        )}
+                    >
+                        {infoLoading ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                            <Info className="h-3 w-3" />
+                        )}
+                    </button>
                     <a
                         href={zillowUrl(l.address) ?? undefined}
                         target="_blank"

@@ -79,7 +79,7 @@ export function Search({handleSubmit}: SearchProps) {
           }} 
       />
       </TooltipTrigger>
-      <TooltipContent side='right' className="bg-white/50 text-gray-800 ml-10 backdrop-blur-2xl backdrop-saturate-150">
+      <TooltipContent side='right' className="bg-white/50 text-gray-800 ml-10 backdrop-blur-2xl backdrop-saturate-150 z-500">
           <Popover>
             <PopoverTrigger>
                 <CircleQuestionMark scale='0.1'/>

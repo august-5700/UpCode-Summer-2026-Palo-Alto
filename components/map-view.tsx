@@ -30,10 +30,14 @@ import L from "leaflet";
 import { MarkerType, SidebarContent, TractData } from "@/utils/types";
 import LoadingToast from "./loading-toast";
 import SummaryToast from "./summary-toast";
-import { summary } from "@/utils/ai";
+import { summary, webSearchSummary } from "@/utils/ai";
+import { HOME_INFO_PROMPT } from "@/prompts/homeInfoPrompt";
 import { VIEW_LISTINGS_PROMPT } from "@/prompts/viewListingsPrompt";
 import { COMPARE_REGIONS_PROMPT } from "@/prompts/compareRegionsPrompt";
 import { COMPARE_LISTINGS_PROMPT } from "@/prompts/compareListingsPrompt";
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
+import { Popover, PopoverContent, PopoverDescription, PopoverHeader, PopoverTitle, PopoverTrigger } from './ui/popover';
+import { CircleQuestionMark } from "lucide-react";
 
 type Hover = { block: any; x: number; y: number; countyName: string | null } | null;
 
@@ -258,6 +262,27 @@ export default function MapView() {
             runSummary(seq, VIEW_LISTINGS_PROMPT, context, "Regional Fact"),
         [runSummary]
     );
+
+    const handleHomeInfo = useCallback(async (l: SaleListing) => {
+        const seq = ++factSeqRef.current;
+        setAreaFact(null);
+        setSummaryTitle("Home Info");
+        try {
+            const text = await webSearchSummary(HOME_INFO_PROMPT, {
+                address: l.address,
+                price: l.price,
+                bedrooms: l.bedrooms,
+                bathrooms: l.bathrooms,
+                squareFootage: l.squareFootage,
+                yearBuilt: l.yearBuilt,
+                propertyType: l.propertyType,
+                daysOnMarket: l.daysOnMarket,
+            });
+            if (seq !== factSeqRef.current) return;
+            const trimmed = text.trim();
+            if (trimmed) setAreaFact(trimmed);
+        } catch {}
+    }, []);
 
     const comparison = useMemo(() => {
         if (sidebar.level === "county" || sidebar.level === "block") {
@@ -525,6 +550,7 @@ export default function MapView() {
                 onClose={closeSidebar}
                 onStartCompare={startCompare}
                 onStartListingCompare={startListingCompare}
+                onHomeInfo={handleHomeInfo}
                 onRemoveSet={removeSet}
                 onRemoveListing={removeListing}
                 onListingSelect={handleListingSelect}
@@ -564,24 +590,40 @@ export default function MapView() {
                     }
                 }}
             />
-
-            <button
-                disabled={!enableListingsButton || fetchingListings}
-                onClick={() => {
-                    if (enableListingsButton && !fetchingListings) {
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <button
+                        disabled={!enableListingsButton || fetchingListings}
+                        onClick={() => {
+                            if (enableListingsButton && !fetchingListings) {
                         closeSidebar()
                         handleViewListingBtn();
-                    }
+                            }
                 }}
-                className={cn(
-                    "absolute left-86 top-5 z-100 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-lg  transition duration-300",
-                    enableListingsButton && !fetchingListings
-                        ? "bg-blue-600 hover:bg-blue-700"
-                        : "bg-gray-400 hover:bg-gray-500 cursor-not-allowed"
-                )}
-            >
-                {fetchingListings ? 'Fetching…' : 'View Listings'}
-            </button>
+                        className={cn(
+                            " absolute left-86 top-5 z-100 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-lg  transition duration-300",
+                            enableListingsButton && !fetchingListings
+                                ? "bg-blue-600 hover:bg-blue-700"
+                                : "bg-gray-400 hover:bg-gray-500 cursor-not-allowed"
+                        )}
+                    >
+                        {fetchingListings ? 'Fetching…' : 'View Listings'}
+                    </button>
+                </TooltipTrigger>
+                <TooltipContent side='left' className="bg-white/50 text-gray-800 backdrop-blur-2xl backdrop-saturate-150">
+                    <Popover>
+                        <PopoverTrigger>
+                            <CircleQuestionMark scale='0.1'/>
+                        </PopoverTrigger>
+                        <PopoverContent side="top" className='mb-3 bg-white/50 backdrop-blur-2xl backdrop-saturate-150 text-gray-700'>
+                            <PopoverHeader>
+                                <PopoverTitle>Find Listings In An Area</PopoverTitle>
+                                <PopoverDescription className='text-xs'>Click to find listings in cities of the shown area. Only works when zoomed in</PopoverDescription>
+                            </PopoverHeader>
+                        </PopoverContent>
+                    </Popover>
+                </TooltipContent>
+            </Tooltip>
         </>
     );
 }

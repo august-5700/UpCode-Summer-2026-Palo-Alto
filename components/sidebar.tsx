@@ -25,6 +25,7 @@ interface SidebarProps {
     /** Remove a listing from the browsable list. */
     onRemoveListing: (l: SaleListing) => void;
     onListingSelect: (l: SaleListing) => void;
+    onHomeInfo: (l: SaleListing) => void;
 }
 
 // Single-set widths are sized to comfortably fit that level's content.
@@ -54,6 +55,7 @@ export default function Sidebar({
     onRemoveSet,
     onRemoveListing,
     onListingSelect,
+    onHomeInfo,
 }: SidebarProps) {
     const level = content.level;
 
@@ -75,7 +77,7 @@ export default function Sidebar({
             exit={{ opacity: 0, x: 'var(--entry-distance-x)' }}
             transition={{ duration: 0.3 }}
             className={cn(
-                'overflow-x-auto absolute right-4 top-4 z-100 [--entry-distance-x:20px] md:[--entry-distance-x:50px]',
+                'overflow-x-auto rounded-3xl absolute right-4 top-4 z-100 [--entry-distance-x:20px] md:[--entry-distance-x:50px]',
                 widthClass
             )}
         >
@@ -125,6 +127,7 @@ export default function Sidebar({
                             onListingSelect={onListingSelect}
                             onStartListingCompare={onStartListingCompare}
                             onRemoveListing={onRemoveListing}
+                            onHomeInfo={onHomeInfo}
                         />
                     ))}
             </Card>
@@ -230,6 +233,7 @@ function ListingBrowse({
     onListingSelect,
     onStartListingCompare,
     onRemoveListing,
+    onHomeInfo,
 }: {
     title: string;
     region: TractData | null;
@@ -239,6 +243,7 @@ function ListingBrowse({
     onListingSelect: (l: SaleListing) => void;
     onStartListingCompare: (l: SaleListing) => void;
     onRemoveListing: (l: SaleListing) => void;
+    onHomeInfo: (l: SaleListing) => void;
 }) {
     return (
         <div className="space-y-4 w-full h-full">
@@ -256,6 +261,7 @@ function ListingBrowse({
                 onListingSelect={onListingSelect}
                 onCompareListing={onStartListingCompare}
                 onRemoveListing={onRemoveListing}
+                onHomeInfo={onHomeInfo}
             />
         </div>
     );
