@@ -32,13 +32,13 @@ export const renderMarkers = (
                     html: `
                         <img
                         src="/map-pin.svg"
-                        width="24"
-                        height="24"
+                        width="28"
+                        height="28"
                         draggable="false"
                         />
                     `,
-                    iconSize: [24, 24],
-                    iconAnchor: [12, 24],
+                    iconSize: [28, 28],
+                    iconAnchor: [15, 35],
                     }),
                 })
             );

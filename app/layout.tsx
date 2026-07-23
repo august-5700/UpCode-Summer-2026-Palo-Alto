@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Map Rate",
+  title: "MapRate",
   description: "A powerful tool for real estate investors looking for the best place to invest",
 };
 
